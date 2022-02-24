@@ -20,6 +20,8 @@ import { Actions, Keycode, Milliseconds } from './types';
 
 import '@nut-tree/template-matcher';
 
+import { paused } from './main';
+
 screen.config.resourceDirectory = 'resources';
 screen.config.autoHighlight = true;
 screen.config.confidence = 0.95;
@@ -48,6 +50,11 @@ export const randomSleep = async () => {
   await sleep(sleepTime);
 };
 
+export const pause = async () => {
+  await sleep(1000);
+  if (paused) await pause();
+};
+
 export const runSetup = async (): Promise<Actions> => {
   return new Promise((resolve) => {
     let actions: Actions = [];
@@ -62,13 +69,8 @@ export const runSetup = async (): Promise<Actions> => {
     };
 
     const handleKeyPress = (key: { rawcode: number }) => {
-      // Exit when backtick is pressed
-      if (key.rawcode === 192) {
-        process.exit(1);
-      }
-
       // Finish setup when tab is pressed
-      else if (key.rawcode === 9) {
+      if (key.rawcode === 9) {
         iohook.off('mouseclick', handleClick);
         resolve(actions);
       }

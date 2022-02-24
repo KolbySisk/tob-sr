@@ -5,21 +5,29 @@ import {
   clickPoint,
   colorCheck,
   getFuzzyNumber,
+  pause,
   pressKey,
   randomSleep,
   runSetup,
   sleep,
 } from './utils';
 import { Actions, Milliseconds } from './types';
+import iohook from 'iohook';
 
-let actions: Actions;
+export let paused = false;
 
-const maxIterations = 10000;
+const iterationsToRun = 10000;
+let iterationCount = 0;
 
 const actionWaitTime: Milliseconds = 15000;
 
-const doActions = async () => {
+const doActions = async (actions: Actions) => {
+  await randomSleep();
+
   for (const action of actions) {
+    if (paused) await pause();
+
+    // Perform action - click
     if (action.actionType === 'click') {
       // Check color of click position is the expected color
       await colorCheck(action.data.point, action.data.color);
@@ -29,24 +37,41 @@ const doActions = async () => {
 
       // randomize the delay after each click - random ms between 500 - 1500
       await sleep(getFuzzyNumber(1000, 500));
-    } else if (action.actionType === 'keypress') {
+    }
+
+    // Perform action - type
+    else if (action.actionType === 'keypress') {
       if (action.data === 32) await sleep(actionWaitTime);
       else pressKey(action.data);
     }
   }
+
+  iterationCount++;
 };
 
-const runBot = async () => {
-  for (let index = 1; index < maxIterations; index++) {
-    await doActions();
-    await randomSleep();
+const runBot = async (actions: Actions) => {
+  paused = false;
+
+  while (iterationCount < iterationsToRun) {
+    await doActions(actions);
+    await sleep(200);
   }
 };
 
+export const initControls = () => {
+  iohook.on('keypress', (key: { rawcode: number }) => {
+    // Exit when backtick is pressed
+    if (key.rawcode === 192) process.exit(1);
+    // Pause/Resume when p is pressed
+    else if (key.rawcode === 80) paused = !paused;
+  });
+};
+
 const init = async () => {
-  actions = await runSetup();
+  initControls();
+  const actions = await runSetup();
   console.log(JSON.stringify(actions));
-  runBot();
+  runBot(actions);
 };
 
 init();
@@ -54,6 +79,5 @@ init();
 /**
  * Ideas:
  * - GUI
- * - Pause / Resume
  * - Save actions, run last actions
  */
