@@ -95,8 +95,8 @@ export const getFuzzyPoint = (point: Point): Point => {
   const fuzzyBounds = 10;
 
   return {
-    x: getFuzzyNumber(point.x - fuzzyBounds, point.x + fuzzyBounds),
-    y: getFuzzyNumber(point.y - fuzzyBounds, point.y + fuzzyBounds),
+    x: getFuzzyNumber(point.x, fuzzyBounds),
+    y: getFuzzyNumber(point.y, fuzzyBounds),
   };
 };
 
@@ -136,7 +136,7 @@ export const colorCheck = async (point: Point, color: RGBA): Promise<boolean | v
 
     console.log(colorSimilarity);
 
-    const colorsMatch = colorSimilarity < 15;
+    const colorsMatch = colorSimilarity < 20;
 
     // colors are close enough, check passes
     if (colorsMatch) {

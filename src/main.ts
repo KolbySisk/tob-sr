@@ -25,7 +25,7 @@ const doActions = async () => {
       await colorCheck(action.data.point, action.data.color);
 
       // Move mouse to a fuzzy position and click
-      await clickPoint({ point: action.data.point, fuzzy: false });
+      await clickPoint({ point: action.data.point, fuzzy: true });
 
       // randomize the delay after each click - random ms between 500 - 1500
       await sleep(getFuzzyNumber(1000, 500));
