@@ -1,5 +1,5 @@
 {
-  "name": "bot-test",
+  "name": "tob-sr",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,13 +10,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@nut-tree/nut-js": "^2.0.1",
+    "@nut-tree/template-matcher": "^1.0.1",
     "color-convert": "^2.0.1",
+    "colorette": "^2.0.16",
     "delta-e": "^0.0.8",
-    "fast-average-color": "^7.1.0",
     "iohook": "^0.6.6",
-    "jimp": "^0.16.1",
-    "lodash": "^4.17.21",
-    "robotjs": "^0.6.0"
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@types/color-convert": "^2.0.0",

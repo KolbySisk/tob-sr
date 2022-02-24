@@ -1,6 +1,12 @@
+import { Point, RGBA } from '@nut-tree/nut-js';
+
+export type Milliseconds = number;
+
+export type Actions = (ActionClick | ActionKeypress)[];
+
 export type ActionClick = {
   actionType: 'click';
-  data: { position: Position; color: Hex };
+  data: { point: Point; color: RGBA };
 };
 
 export type ActionKeypress = {
@@ -8,14 +14,4 @@ export type ActionKeypress = {
   data: Keycode;
 };
 
-export type Actions = (ActionClick | ActionKeypress)[];
-
-export type Position = { x: number; y: number };
-
 export type Keycode = number;
-
-export type Milliseconds = number;
-
-export type Lab = { L: number; A: number; B: number };
-export type Rgb = number[];
-export type Hex = string;
