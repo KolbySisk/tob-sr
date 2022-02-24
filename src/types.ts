@@ -1,6 +1,6 @@
 export type ActionClick = {
   actionType: 'click';
-  data: { position: Position; color: RGB };
+  data: { position: Position; color: Hex };
 };
 
 export type ActionKeypress = {
@@ -16,4 +16,6 @@ export type Keycode = number;
 
 export type Milliseconds = number;
 
-export type RGB = number[];
+export type Lab = { L: number; A: number; B: number };
+export type Rgb = number[];
+export type Hex = string;

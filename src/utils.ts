@@ -1,8 +1,15 @@
 import _ from 'lodash';
 import iohook from 'iohook';
-import robot from 'robotjs';
+import robot, { Bitmap } from 'robotjs';
+import delta from 'delta-e';
+import colorConvert from 'color-convert';
+import FastAverageColor from 'fast-average-color';
+import jimp from 'jimp';
 
-import { Actions, Keycode, Milliseconds, Position, RGB } from './types';
+import { Actions, Hex, Keycode, Lab, Milliseconds, Position } from './types';
+import { RGB } from 'color-convert/conversions';
+
+const colorAverage = new FastAverageColor();
 
 export const sleep = (sleepDuration: Milliseconds) => {
   return new Promise((resolve) => {
@@ -76,52 +83,149 @@ export const runSetup = async (): Promise<Actions> => {
   });
 };
 
-export const getColorAtPosition = (position: Position): RGB => {
+export const getColorAtPosition = (position: Position, screenImage?: Bitmap): Hex => {
+  const capture = screenImage ?? getScreenImage();
+
+  const jimpImage = new jimp({
+    data: capture.image,
+    width: capture.width,
+    height: capture.height,
+  });
+
+  const jimpColor = jimp.intToRGBA(jimpImage.getPixelColor(position.x, position.y));
+
+  const hex = colorConvert.rgb.hex([jimpColor.r, jimpColor.g, jimpColor.b]);
+
+  return hex;
+};
+
+export const hexToLab = (hex: Hex): Lab => {
+  var result = colorConvert.hex.lab(hex);
+  return { L: result[0], A: result[1], B: result[2] };
+};
+
+export const getColorSimilarity = (hexA: Hex, hexB: Hex) => {
+  const labA = hexToLab(hexA);
+  const labB = hexToLab(hexB);
+
+  return delta.getDeltaE00(labA, labB);
+};
+
+export const getScreenImage = () => {
   const screenSize = robot.getScreenSize();
-  const img = robot.screen.capture(0, 0, screenSize.width, screenSize.height);
-  const hex = img.colorAt(position.x, position.y);
-  return hexToRgb(`#${hex}`);
-};
+  const screenImage = robot.screen.capture(0, 0, screenSize.width, screenSize.height);
 
-export const hexToRgb = (hex: string): number[] => {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return [parseInt(result![1], 16), parseInt(result![2], 16), parseInt(result![3], 16)];
-};
-
-export function getColorSimilarity(rgbA: RGB, rgbB: RGB) {
-  function rgb2lab(rgb: number[]) {
-    let r = rgb[0] / 255,
-      g = rgb[1] / 255,
-      b = rgb[2] / 255,
-      x,
-      y,
-      z;
-    r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
-    g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
-    b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
-    x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
-    y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.0;
-    z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
-    x = x > 0.008856 ? Math.pow(x, 1 / 3) : 7.787 * x + 16 / 116;
-    y = y > 0.008856 ? Math.pow(y, 1 / 3) : 7.787 * y + 16 / 116;
-    z = z > 0.008856 ? Math.pow(z, 1 / 3) : 7.787 * z + 16 / 116;
-    return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+  // fixes something, maybe? https://github.com/octalmage/robotjs/issues/545
+  for (var i = 0; i < screenImage.image.length; i += 4) {
+    let r = screenImage.image[i];
+    let b = screenImage.image[i + 2];
+    screenImage.image[i] = b;
+    screenImage.image[i + 2] = r;
+    screenImage.image[i + 3] = 255;
   }
-  let labA = rgb2lab(rgbA);
-  let labB = rgb2lab(rgbB);
-  let deltaL = labA[0] - labB[0];
-  let deltaA = labA[1] - labB[1];
-  let deltaB = labA[2] - labB[2];
-  let c1 = Math.sqrt(labA[1] * labA[1] + labA[2] * labA[2]);
-  let c2 = Math.sqrt(labB[1] * labB[1] + labB[2] * labB[2]);
-  let deltaC = c1 - c2;
-  let deltaH = deltaA * deltaA + deltaB * deltaB - deltaC * deltaC;
-  deltaH = deltaH < 0 ? 0 : Math.sqrt(deltaH);
-  let sc = 1.0 + 0.045 * c1;
-  let sh = 1.0 + 0.015 * c1;
-  let deltaLKlsl = deltaL / 1.0;
-  let deltaCkcsc = deltaC / sc;
-  let deltaHkhsh = deltaH / sh;
-  let i = deltaLKlsl * deltaLKlsl + deltaCkcsc * deltaCkcsc + deltaHkhsh * deltaHkhsh;
-  return i < 0 ? 0 : Math.sqrt(i);
-}
+
+  return screenImage;
+};
+
+export const getColorsAtPosition = (position: Position): Hex[] => {
+  const { x, y } = position;
+  const bigX = position.x + 1;
+  const bigY = position.y + 1;
+  const smallX = position.x - 1;
+  const smallY = position.y - 1;
+
+  const positions: Position[] = [
+    {
+      ...position,
+    },
+    { x: bigX, y },
+    { x: smallX, y },
+    { x, y: bigY },
+    { x, y: smallY },
+    { x: bigX, y: bigY },
+    { x: smallX, y: smallY },
+    { x: bigX, y: smallY },
+    { x: smallX, y: bigY },
+  ];
+
+  const screenImage = getScreenImage();
+
+  const colors: Hex[] = positions.map((position) => {
+    return getColorAtPosition(position, screenImage);
+  });
+
+  return colors;
+};
+
+export const getAverageColorAtPosition = (position: Position): Hex => {
+  const colorsAtPosition = getColorsAtPosition(position);
+  const colors = colorsAtPosition.map((hex) => {
+    const rgb = colorConvert.hex.rgb(hex);
+    const rgba = [...rgb, 255];
+    return rgba;
+  });
+
+  const averageRgb = colorAverage.getColorFromArray4(colors.flat());
+  return colorConvert.rgb.hex(averageRgb as unknown as RGB);
+};
+
+let imageNumber = 1;
+
+export const saveScreenImage = async (screenImage?: Bitmap) => {
+  const swapRedAndBlueChannel = (screenImage: Bitmap) => {
+    for (let i = 0; i < screenImage.width * screenImage.height * 4; i += 4) {
+      [screenImage.image[i], screenImage.image[i + 2]] = [
+        screenImage.image[i + 2],
+        screenImage.image[i],
+      ];
+    }
+    return screenImage;
+  };
+
+  const robotImage = screenImage
+    ? swapRedAndBlueChannel(screenImage)
+    : swapRedAndBlueChannel(robot.screen.capture());
+
+  const jimpImage = new jimp({
+    data: robotImage.image,
+    width: robotImage.width,
+    height: robotImage.height,
+  });
+
+  await jimpImage.writeAsync(`${imageNumber}.png`);
+
+  imageNumber++;
+};
+
+export const colorCheck = async (position: Position, color: Hex): Promise<boolean | void> => {
+  const allowedFails = 10;
+  let failCount = 0;
+
+  const checkColors = async (position: Position, color: Hex) => {
+    const activeColor = getColorAtPosition(position);
+    const colorSimilarity = getColorSimilarity(activeColor, color);
+    const colorsMatch = colorSimilarity < 20;
+
+    // colors are close enough, check passes
+    if (colorsMatch) {
+      return;
+    }
+
+    // check failed too many times, exit
+    else if (failCount === allowedFails) {
+      console.log('color check failed, exiting');
+      await saveScreenImage();
+      process.exit(1);
+    }
+
+    // check failed, try again
+    else {
+      failCount++;
+      console.log(`color check fail: ${failCount}`);
+      await sleep(1000);
+      await checkColors(position, color);
+    }
+  };
+
+  await checkColors(position, color);
+};
