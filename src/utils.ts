@@ -84,21 +84,6 @@ export const clickPoint = async ({
   await mouse.leftClick();
 };
 
-export const clickRegion = async ({
-  region,
-  speed = 1500,
-  fuzzy,
-}: {
-  region: Region;
-  speed?: number;
-  fuzzy?: boolean;
-}) => {
-  mouse.config.mouseSpeed = getFuzzyNumber(speed, 500); // Pixels per second
-  const pointToClick = fuzzy ? getFuzzyPoint(await centerOf(region)) : await centerOf(region);
-  await mouse.move(straightTo(pointToClick), easeOut);
-  await mouse.leftClick();
-};
-
 export const pressKey = (keycode: Keycode) => {
   if (keycode === 27) keyboard.type(Key.Escape);
   else if (keycode === 32) keyboard.type(Key.Space);
@@ -224,6 +209,6 @@ export const dropInventory = async (inventoryItemRegions: Region[]) => {
       easingFunction: linear,
     });
 
-    await sleep(200);
+    await sleep(getFuzzyNumber(200, 50));
   }
 };

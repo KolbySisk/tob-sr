@@ -1,21 +1,14 @@
-'use strict';
-
 import _ from 'lodash';
-import iohook from 'iohook';
 import { clickPoint, colorCheck, getFuzzyNumber, pressKey, randomSleep, sleep } from '../utils';
-import { Actions, TrainingMethod } from '../types';
+import { Actions } from '../types';
 import { getTrainingMethod, runSetup } from './utils';
+import { paused, pause } from '../';
+import { TrainingMethod } from './types';
 
-export let paused = false;
 export let trainingMethod: TrainingMethod;
 
 const iterationsToRun = 10000; // TODO: move to console
 let iterationCount = 0;
-
-const pause = async () => {
-  await sleep(1000);
-  if (paused) await pause();
-};
 
 const doActions = async (actions: Actions) => {
   await randomSleep();
@@ -46,35 +39,20 @@ const doActions = async (actions: Actions) => {
 };
 
 const runBot = async (actions: Actions) => {
-  paused = false;
-
   while (iterationCount < iterationsToRun) {
     await doActions(actions);
     await sleep(200);
   }
 };
 
-export const initControls = () => {
-  iohook.on('keypress', (key: { rawcode: number }) => {
-    // Exit when backtick is pressed
-    if (key.rawcode === 192) process.exit(1);
-    // Pause/Resume when p is pressed
-    else if (key.rawcode === 80) paused = !paused;
-  });
-};
-
-const init = async () => {
-  initControls();
+export const init = async () => {
   trainingMethod = await getTrainingMethod();
   const actions = await runSetup();
   console.log(JSON.stringify(actions));
   runBot(actions);
 };
 
-init();
-
 /**
  * Ideas:
- * - GUI
  * - Save actions, run last actions
  */

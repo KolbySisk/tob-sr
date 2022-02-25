@@ -16,12 +16,6 @@ export type ActionKeypress = {
 
 export type Keycode = number;
 
-export type TrainingMethod = { waitDuration: Milliseconds };
-
-export type TrainingMethods = {
-  [key: string]: TrainingMethod;
-};
-
 export type MouseEvent = {
   button: number;
   clicks: number;

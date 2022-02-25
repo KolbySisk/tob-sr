@@ -2,7 +2,8 @@ import { mouse, screen } from '@nut-tree/nut-js';
 import { magenta } from 'colorette';
 import inquirer from 'inquirer';
 import iohook from 'iohook';
-import { Actions, TrainingMethod, TrainingMethods } from '../types';
+import { Actions } from '../types';
+import { TrainingMethods, TrainingMethod } from './types';
 
 export const runSetup = async (): Promise<Actions> => {
   return new Promise((resolve) => {

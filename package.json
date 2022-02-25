@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "bank": "ts-node ./src/bank",
-    "mine": "ts-node ./src/mining"
+    "start": "ts-node ./src"
   },
   "keywords": [],
   "author": "",
