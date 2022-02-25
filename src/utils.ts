@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import iohook from 'iohook';
-import { blue, magenta, red, yellow } from 'colorette';
+import { blue, red, yellow } from 'colorette';
 import colorConvert from 'color-convert';
 import delta from 'delta-e';
 
@@ -13,14 +13,13 @@ import {
   keyboard,
   Key,
   RGBA,
-  imageResource,
+  Region,
+  centerOf,
 } from '@nut-tree/nut-js';
 
-import { Actions, Keycode, Milliseconds } from './types';
+import { Keycode, Milliseconds, MouseEvent } from './types';
 
 import '@nut-tree/template-matcher';
-
-import { paused } from './main';
 
 screen.config.resourceDirectory = 'resources';
 screen.config.autoHighlight = true;
@@ -50,45 +49,6 @@ export const randomSleep = async () => {
   await sleep(sleepTime);
 };
 
-export const pause = async () => {
-  await sleep(1000);
-  if (paused) await pause();
-};
-
-export const runSetup = async (): Promise<Actions> => {
-  return new Promise((resolve) => {
-    let actions: Actions = [];
-
-    const handleClick = async () => {
-      const point = await mouse.getPosition();
-      const color = await screen.colorAt(point);
-
-      actions.push({ actionType: 'click', data: { point, color } });
-
-      console.log(magenta('click to add a point, or type to add a keypress. Press tab when ready'));
-    };
-
-    const handleKeyPress = (key: { rawcode: number }) => {
-      // Finish setup when tab is pressed
-      if (key.rawcode === 9) {
-        iohook.off('mouseclick', handleClick);
-        resolve(actions);
-      }
-
-      // Push pressed key into actions
-      else {
-        actions.push({ actionType: 'keypress', data: key.rawcode });
-      }
-    };
-
-    console.log(magenta('click first position'));
-
-    iohook.on('mouseclick', handleClick);
-    iohook.on('keypress', handleKeyPress);
-    iohook.start();
-  });
-};
-
 export const getFuzzyNumber = (number: number, bound: number) => {
   return _.random(number - bound, number + bound);
 };
@@ -106,9 +66,32 @@ const easeOut: EasingFunction = (x: number): number => {
   return Math.sqrt(1 - Math.pow(x - 1, 2));
 };
 
-export const clickPoint = async ({ point, fuzzy }: { point: Point; fuzzy?: boolean }) => {
-  mouse.config.mouseSpeed = getFuzzyNumber(1500, 500); // Pixels per second
+export const clickPoint = async ({
+  point,
+  speed = 1500,
+  fuzzy,
+}: {
+  point: Point;
+  speed?: number;
+  fuzzy?: boolean;
+}) => {
+  mouse.config.mouseSpeed = getFuzzyNumber(speed, 500); // Pixels per second
   const pointToClick = fuzzy ? getFuzzyPoint(point) : point;
+  await mouse.move(straightTo(pointToClick), easeOut);
+  await mouse.leftClick();
+};
+
+export const clickRegion = async ({
+  region,
+  speed = 1500,
+  fuzzy,
+}: {
+  region: Region;
+  speed?: number;
+  fuzzy?: boolean;
+}) => {
+  mouse.config.mouseSpeed = getFuzzyNumber(speed, 500); // Pixels per second
+  const pointToClick = fuzzy ? getFuzzyPoint(await centerOf(region)) : await centerOf(region);
   await mouse.move(straightTo(pointToClick), easeOut);
   await mouse.leftClick();
 };
@@ -166,4 +149,76 @@ export const colorCheck = async (point: Point, color: RGBA): Promise<boolean | v
   };
 
   await checkColors(point, color);
+};
+
+export const getRegion = (): Promise<Region> => {
+  return new Promise((resolve) => {
+    let region: Region | undefined = undefined;
+    let mouseDownPoint: Point | undefined = undefined;
+    let mouseUpPoint: Point | undefined = undefined;
+
+    const handleMouseDown = (event: MouseEvent) => {
+      mouseDownPoint = {
+        x: event.x,
+        y: event.y,
+      };
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      if (!mouseDownPoint) throw new Error('No mouse down, how did you do this?');
+
+      mouseUpPoint = {
+        x: event.x,
+        y: event.y,
+      };
+
+      const left = mouseDownPoint.x < mouseUpPoint.x ? mouseDownPoint.x : mouseUpPoint.x;
+      const top = mouseDownPoint.y < mouseUpPoint.y ? mouseDownPoint.y : mouseUpPoint.y;
+      const width = Math.abs(mouseDownPoint.x - mouseUpPoint.x);
+      const height = Math.abs(mouseDownPoint.y - mouseUpPoint.y);
+
+      region = new Region(left, top, width, height);
+
+      screen.highlight(region);
+
+      iohook.off('mousedown', handleMouseDown);
+      iohook.off('mouseup', handleMouseUp);
+
+      resolve(region);
+    };
+
+    iohook.on('mousedown', handleMouseDown);
+    iohook.on('mouseup', handleMouseUp);
+    iohook.start();
+  });
+};
+
+export const getInventoryItemRegions = async (): Promise<Region[]> => {
+  const inventoryRegion = await getRegion();
+  const inventoryItemRegions: Region[] = [];
+
+  const inventoryItemWidth = inventoryRegion.width / 4;
+  const inventoryItemHeight = inventoryRegion.height / 7;
+
+  for (let x = 0; x < 4; x++) {
+    for (let y = 0; y < 7; y++) {
+      const left = inventoryRegion.left + x * inventoryItemWidth;
+      const top = inventoryRegion.top + y * inventoryItemHeight;
+
+      const inventoryItemRegion = new Region(left, top, inventoryItemWidth, inventoryItemHeight);
+      inventoryItemRegions.push(inventoryItemRegion);
+    }
+  }
+
+  return inventoryItemRegions;
+};
+
+export const dropInventory = async (inventoryItemRegions: Region[]) => {
+  await keyboard.pressKey(Key.LeftShift);
+
+  for (const inventoryItemRegion of inventoryItemRegions) {
+    await clickPoint({ point: await centerOf(inventoryItemRegion), speed: 800, fuzzy: true });
+  }
+
+  await keyboard.releaseKey(Key.LeftShift);
 };

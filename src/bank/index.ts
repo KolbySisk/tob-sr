@@ -1,25 +1,21 @@
 'use strict';
 
 import _ from 'lodash';
-import {
-  clickPoint,
-  colorCheck,
-  getFuzzyNumber,
-  pause,
-  pressKey,
-  randomSleep,
-  runSetup,
-  sleep,
-} from './utils';
-import { Actions, Milliseconds } from './types';
 import iohook from 'iohook';
+import { clickPoint, colorCheck, getFuzzyNumber, pressKey, randomSleep, sleep } from '../utils';
+import { Actions, TrainingMethod } from '../types';
+import { getTrainingMethod, runSetup } from './utils';
 
 export let paused = false;
+export let trainingMethod: TrainingMethod;
 
-const iterationsToRun = 10000;
+const iterationsToRun = 10000; // TODO: move to console
 let iterationCount = 0;
 
-const actionWaitTime: Milliseconds = 15000;
+const pause = async () => {
+  await sleep(1000);
+  if (paused) await pause();
+};
 
 const doActions = async (actions: Actions) => {
   await randomSleep();
@@ -41,7 +37,7 @@ const doActions = async (actions: Actions) => {
 
     // Perform action - type
     else if (action.actionType === 'keypress') {
-      if (action.data === 32) await sleep(actionWaitTime);
+      if (action.data === 32) await sleep(trainingMethod.waitDuration);
       else pressKey(action.data);
     }
   }
@@ -69,6 +65,7 @@ export const initControls = () => {
 
 const init = async () => {
   initControls();
+  trainingMethod = await getTrainingMethod();
   const actions = await runSetup();
   console.log(JSON.stringify(actions));
   runBot(actions);
