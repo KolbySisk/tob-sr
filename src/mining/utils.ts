@@ -5,7 +5,7 @@ import { ScriptInfo } from './types';
 
 export const runSetup = (): Promise<ScriptInfo> => {
   return new Promise(async (resolve) => {
-    const scriptInfo: ScriptInfo = {};
+    const scriptInfo: any = {};
 
     console.log(magenta('select inventory'));
     scriptInfo.inventoryItemRegions = await getInventoryItemRegions();

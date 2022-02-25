@@ -15,6 +15,7 @@ import {
   RGBA,
   Region,
   centerOf,
+  linear,
 } from '@nut-tree/nut-js';
 
 import { Keycode, Milliseconds, MouseEvent } from './types';
@@ -32,7 +33,7 @@ export const sleep = (sleepDuration: Milliseconds) => {
 };
 
 export const randomSleep = async () => {
-  let sleepTime = 10;
+  let sleepTime = getFuzzyNumber(100, 50);
 
   // 20% chance of a short sleep
   if (_.random(10) >= 9) {
@@ -54,7 +55,7 @@ export const getFuzzyNumber = (number: number, bound: number) => {
 };
 
 export const getFuzzyPoint = (point: Point): Point => {
-  const fuzzyBounds = 10;
+  const fuzzyBounds = 5;
 
   return {
     x: getFuzzyNumber(point.x, fuzzyBounds),
@@ -70,14 +71,16 @@ export const clickPoint = async ({
   point,
   speed = 1500,
   fuzzy,
+  easingFunction = easeOut,
 }: {
   point: Point;
   speed?: number;
   fuzzy?: boolean;
+  easingFunction?: EasingFunction;
 }) => {
   mouse.config.mouseSpeed = getFuzzyNumber(speed, 500); // Pixels per second
   const pointToClick = fuzzy ? getFuzzyPoint(point) : point;
-  await mouse.move(straightTo(pointToClick), easeOut);
+  await mouse.move(straightTo(pointToClick), easingFunction);
   await mouse.leftClick();
 };
 
@@ -135,7 +138,6 @@ export const colorCheck = async (point: Point, color: RGBA): Promise<boolean | v
           `color check failed, exiting. activeColor: ${activeColor}. color: ${color}. x: ${point.x}. y: ${point.y}`
         )
       );
-      //await saveScreenImage();
       process.exit(1);
     }
 
@@ -214,11 +216,14 @@ export const getInventoryItemRegions = async (): Promise<Region[]> => {
 };
 
 export const dropInventory = async (inventoryItemRegions: Region[]) => {
-  await keyboard.pressKey(Key.LeftShift);
-
   for (const inventoryItemRegion of inventoryItemRegions) {
-    await clickPoint({ point: await centerOf(inventoryItemRegion), speed: 800, fuzzy: true });
-  }
+    await clickPoint({
+      point: await centerOf(inventoryItemRegion),
+      speed: 500,
+      fuzzy: true,
+      easingFunction: linear,
+    });
 
-  await keyboard.releaseKey(Key.LeftShift);
+    await sleep(200);
+  }
 };
