@@ -1,20 +1,17 @@
 import { centerOf, Image, OptionalSearchParameters, Region, screen, sleep } from '@nut-tree/nut-js';
-import { clickPoint, dropInventory, randomSleep } from '../utils';
+import { clickPoint, dropInventory, getInventory, randomSleep } from '../utils';
 import { ScriptInfo } from './types';
 import { runSetup } from './utils';
 import { paused, pause } from '../';
 
 import '@nut-tree/template-matcher';
 
-let oreCount = 0;
-
 const checkInventory = async (inventoryItemRegions: Region[]) => {
-  if (oreCount === 28) {
-    await dropInventory(inventoryItemRegions);
-    oreCount = 0;
-  }
+  const inventory = await getInventory(inventoryItemRegions);
 
-  return;
+  if (inventory.filter((inventory) => inventory).length === 28) {
+    await dropInventory(inventoryItemRegions);
+  }
 };
 
 const mineOre = async (watchRegion: Region, oreImage: Image) => {
@@ -48,7 +45,6 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
           }
         } catch (error) {
           console.log('ore mined');
-          oreCount++;
           clearInterval(checkMinedInterval);
           resolve();
         }
@@ -62,14 +58,14 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
 
 const runBot = async (scriptInfo: ScriptInfo) => {
   while (true) {
+    await checkInventory(scriptInfo.inventoryItemRegions);
     await mineOre(scriptInfo.watchRegion, scriptInfo.ore1Image);
-    await checkInventory(scriptInfo.inventoryItemRegions);
 
+    await checkInventory(scriptInfo.inventoryItemRegions);
     await mineOre(scriptInfo.watchRegion, scriptInfo.ore2Image);
-    await checkInventory(scriptInfo.inventoryItemRegions);
 
-    await mineOre(scriptInfo.watchRegion, scriptInfo.ore3Image);
     await checkInventory(scriptInfo.inventoryItemRegions);
+    await mineOre(scriptInfo.watchRegion, scriptInfo.ore3Image);
 
     await randomSleep();
 

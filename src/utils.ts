@@ -3,6 +3,8 @@ import iohook from 'iohook';
 import { blue, red, yellow } from 'colorette';
 import colorConvert from 'color-convert';
 import delta from 'delta-e';
+import getPixels from 'get-pixels';
+import fs from 'fs';
 
 import {
   EasingFunction,
@@ -208,4 +210,48 @@ export const dropInventory = async (inventoryItemRegions: Region[]) => {
 
     await sleep(getFuzzyNumber(200, 50));
   }
+};
+
+export const inventoryItemRegionHasItem = async (region: Region): Promise<boolean> => {
+  return new Promise(async (resolve) => {
+    const borderColor = new RGBA(11, 7, 8, 255);
+    const tempImage = await screen.captureRegion('temp', region); // refactor to use buffer
+    // const screenCapture = await screen.grab();
+
+    getPixels('./temp.png', async (error, pixels) => {
+      if (error) {
+        throw new Error(error.toString());
+      }
+
+      for (let x = 0; x < pixels.shape[0]; x++) {
+        for (let y = 0; y < pixels.shape[1]; y++) {
+          const colorAtPoint = new RGBA(
+            pixels.get(x, y, 0),
+            pixels.get(x, y, 1),
+            pixels.get(x, y, 2),
+            255
+          );
+
+          const colorSimilarity = getColorSimilarity(colorAtPoint, borderColor);
+
+          if (colorSimilarity < 4) {
+            resolve(true);
+          }
+        }
+      }
+      fs.unlink('./temp.png', () => {
+        resolve(false);
+      });
+    });
+  });
+};
+
+export const getInventory = async (inventoryItemRegions: Region[]): Promise<boolean[]> => {
+  const inventory: boolean[] = [];
+
+  for (const inventoryItemRegion of inventoryItemRegions) {
+    inventory.push(await inventoryItemRegionHasItem(inventoryItemRegion));
+  }
+
+  return inventory;
 };
