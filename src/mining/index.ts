@@ -33,9 +33,19 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
 
       await sleep(500);
 
+      let checkCount = 0;
+
       const checkMinedInterval = setInterval(async () => {
         try {
+          checkCount++;
+
+          // If nothing found this will throw, when it throws we assume ore is mined
           await screen.find(oreImage, fullSearchOptionsConfiguration);
+
+          if (checkCount > 50) {
+            console.log('Waiting too long, something is wrong. Resolve and try to continue.');
+            resolve();
+          }
         } catch (error) {
           console.log('ore mined');
           oreCount++;
@@ -43,7 +53,10 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
           resolve();
         }
       }, 200);
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+      resolve();
+    }
   });
 };
 

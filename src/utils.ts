@@ -15,7 +15,6 @@ import {
   RGBA,
   Region,
   centerOf,
-  linear,
 } from '@nut-tree/nut-js';
 
 import { Keycode, Milliseconds, MouseEvent } from './types';
@@ -64,7 +63,7 @@ export const getFuzzyPoint = (point: Point): Point => {
 };
 
 const easeOut: EasingFunction = (x: number): number => {
-  return Math.sqrt(1 - Math.pow(x - 1, 2));
+  return 1 - Math.pow(1 - x, 5);
 };
 
 export const clickPoint = async ({
@@ -204,9 +203,7 @@ export const dropInventory = async (inventoryItemRegions: Region[]) => {
   for (const inventoryItemRegion of inventoryItemRegions) {
     await clickPoint({
       point: await centerOf(inventoryItemRegion),
-      speed: 500,
-      fuzzy: true,
-      easingFunction: linear,
+      speed: getFuzzyNumber(700, 100),
     });
 
     await sleep(getFuzzyNumber(200, 50));

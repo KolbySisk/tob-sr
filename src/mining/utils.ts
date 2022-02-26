@@ -1,4 +1,4 @@
-import { magenta } from 'colorette';
+import { blue, magenta } from 'colorette';
 import { screen } from '@nut-tree/nut-js';
 import { getInventoryItemRegions, getRegion } from '../utils';
 import { ScriptInfo } from './types';
@@ -6,6 +6,8 @@ import { ScriptInfo } from './types';
 export const runSetup = (): Promise<ScriptInfo> => {
   return new Promise(async (resolve) => {
     const scriptInfo: any = {};
+
+    console.log(blue('Make sure your inventory is empty and click-to-drop is on.'));
 
     console.log(magenta('select inventory'));
     scriptInfo.inventoryItemRegions = await getInventoryItemRegions();
