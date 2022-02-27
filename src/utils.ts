@@ -17,9 +17,12 @@ import {
   RGBA,
   Region,
   centerOf,
+  sleep,
 } from '@nut-tree/nut-js';
 
-import { Keycode, Milliseconds, MouseEvent } from './types';
+import { state } from './';
+
+import { Keycode, MouseEvent } from './types';
 
 import '@nut-tree/template-matcher';
 
@@ -27,9 +30,23 @@ screen.config.resourceDirectory = 'resources';
 screen.config.autoHighlight = true;
 screen.config.confidence = 0.95;
 
-export const sleep = (sleepDuration: Milliseconds) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, sleepDuration);
+export const pause = async () => {
+  await sleep(1000);
+  if (state.paused) await pause();
+};
+
+export const initControls = () => {
+  iohook.on('keypress', (key: { rawcode: number }) => {
+    // Exit when backtick is pressed
+    if (key.rawcode === 192) {
+      process.exit();
+    }
+
+    // Pause/Resume when p is pressed
+    else if (key.rawcode === 80) {
+      console.log(state.paused ? 'resuming' : 'pausing');
+      state.setPaused(!state.paused);
+    }
   });
 };
 

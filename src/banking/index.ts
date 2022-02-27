@@ -1,9 +1,10 @@
 import _ from 'lodash';
-import { clickPoint, colorCheck, getFuzzyNumber, pressKey, randomSleep, sleep } from '../utils';
+import { sleep } from '@nut-tree/nut-js';
+import { clickPoint, colorCheck, getFuzzyNumber, pause, pressKey, randomSleep } from '../utils';
 import { Actions } from '../types';
 import { getTrainingMethod, runSetup } from './utils';
-import { paused, pause } from '../';
 import { TrainingMethod } from './types';
+import { state } from '..';
 
 export let trainingMethod: TrainingMethod;
 
@@ -14,7 +15,7 @@ const doActions = async (actions: Actions) => {
   await randomSleep();
 
   for (const action of actions) {
-    if (paused) await pause();
+    if (state.paused) await pause();
 
     // Perform action - click
     if (action.actionType === 'click') {

@@ -1,8 +1,8 @@
 import { centerOf, Image, OptionalSearchParameters, Region, screen, sleep } from '@nut-tree/nut-js';
-import { clickPoint, dropInventory, getInventory, randomSleep } from '../utils';
+import { clickPoint, dropInventory, getInventory, pause, randomSleep } from '../utils';
 import { ScriptInfo } from './types';
 import { runSetup } from './utils';
-import { paused, pause } from '../';
+import { state } from '..';
 
 import '@nut-tree/template-matcher';
 
@@ -15,7 +15,7 @@ const checkInventory = async (inventoryItemRegions: Region[]) => {
 };
 
 const mineOre = async (watchRegion: Region, oreImage: Image) => {
-  if (paused) await pause();
+  if (state.paused) await pause();
 
   return new Promise<void>(async (resolve) => {
     try {
