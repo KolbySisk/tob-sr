@@ -212,37 +212,57 @@ export const dropInventory = async (inventoryItemRegions: Region[]) => {
   }
 };
 
-export const inventoryItemRegionHasItem = async (region: Region): Promise<boolean> => {
+export const inventoryItemRegionHasItem = async (
+  region: Region,
+  retryCount: number = 0
+): Promise<boolean> => {
   return new Promise(async (resolve) => {
-    const borderColor = new RGBA(11, 7, 8, 255);
-    const tempImage = await screen.captureRegion('temp', region); // refactor to use buffer
-    // const screenCapture = await screen.grab();
-
-    getPixels('./temp.png', async (error, pixels) => {
-      if (error) {
-        throw new Error(error.toString());
+    const retry = async (error: string) => {
+      console.log(`retrying inventory item check: ${retryCount}`);
+      console.log(error);
+      if (retryCount === 5) {
+        console.log(red('Inventory item check reached fail limit. Time to bail'));
+        process.exit(1);
       }
+      resolve(await inventoryItemRegionHasItem(region, retryCount + 1));
+    };
 
-      for (let x = 0; x < pixels.shape[0]; x++) {
-        for (let y = 0; y < pixels.shape[1]; y++) {
-          const colorAtPoint = new RGBA(
-            pixels.get(x, y, 0),
-            pixels.get(x, y, 1),
-            pixels.get(x, y, 2),
-            255
-          );
+    try {
+      const borderColor = new RGBA(11, 7, 8, 255);
+      const tempImage = await screen.captureRegion('temp', region); // refactor to use buffer
+      // const screenCapture = await screen.grabRegion(region);
 
-          const colorSimilarity = getColorSimilarity(colorAtPoint, borderColor);
+      getPixels('./temp.png', async (error, pixels) => {
+        if (error) retry(`${error}`);
 
-          if (colorSimilarity < 4) {
-            resolve(true);
+        // loop over every pixel
+        for (let x = 0; x < pixels.shape[0]; x++) {
+          for (let y = 0; y < pixels.shape[1]; y++) {
+            // Create RGBA for current pixel
+            const colorAtPoint = new RGBA(
+              pixels.get(x, y, 0),
+              pixels.get(x, y, 1),
+              pixels.get(x, y, 2),
+              255
+            );
+
+            const colorSimilarity = getColorSimilarity(colorAtPoint, borderColor);
+
+            // this pixel is similar enough to the border color, assume there is an item and return true
+            if (colorSimilarity < 4) {
+              resolve(true);
+            }
           }
         }
-      }
-      fs.unlink('./temp.png', () => {
-        resolve(false);
+
+        // None of the pixels were similar enough to the border color, assume there is no item and return false
+        fs.unlink('./temp.png', () => {
+          resolve(false);
+        });
       });
-    });
+    } catch (error) {
+      retry(`${error}`);
+    }
   });
 };
 

@@ -44,7 +44,6 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
             resolve();
           }
         } catch (error) {
-          console.log('ore mined');
           clearInterval(checkMinedInterval);
           resolve();
         }

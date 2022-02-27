@@ -1,10 +1,10 @@
 'use strict';
 
 import iohook from 'iohook';
-import * as banking from './banking';
-import * as mining from './mining';
 import { sleep } from '@nut-tree/nut-js';
 import inquirer from 'inquirer';
+import * as banking from './banking';
+import * as mining from './mining';
 
 export let paused = false;
 
@@ -16,7 +16,10 @@ export const pause = async () => {
 const initControls = () => {
   iohook.on('keypress', (key: { rawcode: number }) => {
     // Exit when backtick is pressed
-    if (key.rawcode === 192) process.exit(1);
+    if (key.rawcode === 192) {
+      process.exit();
+    }
+
     // Pause/Resume when p is pressed
     else if (key.rawcode === 80) {
       console.log(paused ? 'resuming' : 'pausing');
