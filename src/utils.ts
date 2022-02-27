@@ -5,6 +5,8 @@ import colorConvert from 'color-convert';
 import delta from 'delta-e';
 import getPixels from 'get-pixels';
 import fs from 'fs';
+import { createWorker, PSM } from 'tesseract.js';
+import sharp from 'sharp';
 
 import {
   EasingFunction,
@@ -156,6 +158,21 @@ export const colorCheck = async (point: Point, color: RGBA): Promise<boolean | v
   await checkColors(point, color);
 };
 
+export const getPoint = (): Promise<Point> => {
+  return new Promise((resolve) => {
+    const handleMouseClick = (event: MouseEvent) => {
+      const point = new Point(event.x, event.y);
+
+      iohook.off('mouseclick', handleMouseClick);
+
+      resolve(point);
+    };
+
+    iohook.on('mouseclick', handleMouseClick);
+    iohook.start();
+  });
+};
+
 export const getRegion = (): Promise<Region> => {
   return new Promise((resolve) => {
     let region: Region | undefined = undefined;
@@ -230,7 +247,7 @@ export const dropInventory = async (inventoryItemRegions: Region[]) => {
 };
 
 export const inventoryItemRegionHasItem = async (
-  region: Region,
+  inventoryItemRegion: Region,
   retryCount: number = 0
 ): Promise<boolean> => {
   return new Promise(async (resolve) => {
@@ -241,15 +258,15 @@ export const inventoryItemRegionHasItem = async (
         console.log(red('Inventory item check reached fail limit. Time to bail'));
         process.exit(1);
       }
-      resolve(await inventoryItemRegionHasItem(region, retryCount + 1));
+      resolve(await inventoryItemRegionHasItem(inventoryItemRegion, retryCount + 1));
     };
 
     try {
       const borderColor = new RGBA(11, 7, 8, 255);
-      const tempImage = await screen.captureRegion('temp', region); // refactor to use buffer
+      await screen.captureRegion('temp-inv', inventoryItemRegion); // refactor to use buffer
       // const screenCapture = await screen.grabRegion(region);
 
-      getPixels('./temp.png', async (error, pixels) => {
+      getPixels('./temp-inv.png', async (error, pixels) => {
         if (error) retry(`${error}`);
 
         // loop over every pixel
@@ -273,7 +290,7 @@ export const inventoryItemRegionHasItem = async (
         }
 
         // None of the pixels were similar enough to the border color, assume there is no item and return false
-        fs.unlink('./temp.png', () => {
+        fs.unlink('./temp-inv.png', () => {
           resolve(false);
         });
       });
@@ -291,4 +308,53 @@ export const getInventory = async (inventoryItemRegions: Region[]): Promise<bool
   }
 
   return inventory;
+};
+
+export const getNumberFromRegion = async (
+  region: Region,
+  retryCount: number = 0
+): Promise<number> => {
+  return new Promise(async (resolve) => {
+    const retry = async (error: string) => {
+      console.log(`retrying number check: ${retryCount}`);
+      console.log(error);
+      if (retryCount === 5) {
+        console.log(red('Number check reached fail limit. Time to bail'));
+        process.exit(1);
+      }
+      resolve(await getNumberFromRegion(region, retryCount + 1));
+    };
+
+    try {
+      await screen.captureRegion('temp-number', region); // refactor to use buffer
+      sharp.cache(false);
+      await sharp('./temp-number.png')
+        .extractChannel('green')
+        .negate()
+        .toFile('temp-number-modified.png');
+
+      const worker = createWorker();
+      await worker.load();
+      await worker.loadLanguage('eng');
+      await worker.initialize('eng');
+      await worker.setParameters({
+        tessedit_char_whitelist: '0123456789',
+        user_defined_dpi: '70',
+      });
+
+      const {
+        data: { text },
+      } = await worker.recognize('./temp-number-modified.png');
+
+      await worker.terminate();
+
+      //fs.unlink('./temp-number-modified.png', () => {
+      // fs.unlink('./temp-number.png', () => {
+      resolve(parseInt(text));
+      // });
+      // });
+    } catch (error) {
+      retry(`${error}`);
+    }
+  });
 };

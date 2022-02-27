@@ -7,6 +7,8 @@ import { state } from '..';
 import '@nut-tree/template-matcher';
 
 const checkInventory = async (inventoryItemRegions: Region[]) => {
+  if (state.paused) await pause();
+
   const inventory = await getInventory(inventoryItemRegions);
 
   if (inventory.filter((inventory) => inventory).length === 28) {
