@@ -21,8 +21,8 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
 
   return new Promise<void>(async (resolve) => {
     try {
-      const fullSearchOptionsConfiguration = new OptionalSearchParameters(watchRegion, 0.96);
-      const foundOreLocation = await screen.find(oreImage, fullSearchOptionsConfiguration);
+      const searchOptions = new OptionalSearchParameters(watchRegion, 0.96);
+      const foundOreLocation = await screen.find(oreImage, searchOptions);
 
       await clickPoint({
         point: await centerOf(foundOreLocation),
@@ -30,7 +30,7 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
         fuzzy: true,
       });
 
-      await sleep(500);
+      await sleep(300);
 
       let checkCount = 0;
 
@@ -39,20 +39,25 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
           checkCount++;
 
           // If nothing found this will throw, when it throws we assume ore is mined
-          await screen.find(oreImage, fullSearchOptionsConfiguration);
+          await screen.find(oreImage, searchOptions);
 
           if (checkCount > 50) {
             console.log('Waiting too long, something is wrong. Resolve and try to continue.');
+            clearInterval(checkMinedInterval);
             resolve();
+            return;
           }
         } catch (error) {
+          // Ore was successfully mined
           clearInterval(checkMinedInterval);
           resolve();
+          return;
         }
       }, 200);
     } catch (error) {
       console.log(error);
       resolve();
+      return;
     }
   });
 };

@@ -74,12 +74,10 @@ export const getFuzzyNumber = (number: number, bound: number) => {
   return _.random(number - bound, number + bound);
 };
 
-export const getFuzzyPoint = (point: Point): Point => {
-  const fuzzyBounds = 5;
-
+export const getFuzzyPoint = (point: Point, bounds = 6): Point => {
   return {
-    x: getFuzzyNumber(point.x, fuzzyBounds),
-    y: getFuzzyNumber(point.y, fuzzyBounds),
+    x: getFuzzyNumber(point.x, bounds),
+    y: getFuzzyNumber(point.y, bounds),
   };
 };
 
@@ -126,8 +124,6 @@ export const colorCheck = async (point: Point, color: RGBA): Promise<boolean | v
   const checkColors = async (point: Point, color: RGBA) => {
     const activeColor = await screen.colorAt(point);
     const colorSimilarity = getColorSimilarity(activeColor, color);
-
-    console.log(colorSimilarity);
 
     const colorsMatch = colorSimilarity < 20;
 

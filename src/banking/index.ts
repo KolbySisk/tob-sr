@@ -8,7 +8,7 @@ import { state } from '..';
 
 export let trainingMethod: TrainingMethod;
 
-const iterationsToRun = 10000; // TODO: move to console
+const iterationsToRun = 2100; // TODO: move to console
 let iterationCount = 0;
 
 const doActions = async (actions: Actions) => {
@@ -26,7 +26,7 @@ const doActions = async (actions: Actions) => {
       await clickPoint({ point: action.data.point, fuzzy: true });
 
       // randomize the delay after each click - random ms between 500 - 1500
-      await sleep(getFuzzyNumber(1000, 500));
+      if (trainingMethod.waitDuration !== 0) await sleep(getFuzzyNumber(1000, 500));
     }
 
     // Perform action - type

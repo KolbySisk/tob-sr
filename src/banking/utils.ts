@@ -46,6 +46,9 @@ export const trainingMethods: TrainingMethods = {
   Dhide: {
     waitDuration: 15000,
   },
+  BroadBolts: {
+    waitDuration: 0,
+  },
 };
 
 export const getTrainingMethod = async (): Promise<TrainingMethod> => {

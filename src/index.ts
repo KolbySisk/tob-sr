@@ -4,33 +4,28 @@ import { createEventAdapter } from '@slack/events-api';
 import localtunnel from 'localtunnel';
 import inquirer from 'inquirer';
 import { State } from './state';
-import { getNumberFromRegion, getRegion, initControls } from './utils';
+import { initControls } from './utils';
 import * as banking from './banking';
 import * as mining from './mining';
-import * as thievingKnight from './thieving-knight';
+import * as fireMaking from './fire-making';
 
 import 'dotenv/config';
+import { blue } from 'colorette';
 
 export const state = new State({ paused: false });
 
 const scripts: {
   Banking: typeof banking;
   Mining: typeof mining;
-  ThievingKnight: typeof thievingKnight;
+  FireMaking: typeof fireMaking;
 } = {
   Banking: banking,
   Mining: mining,
-  ThievingKnight: thievingKnight,
+  FireMaking: fireMaking,
 };
 
 const init = async () => {
   initControls();
-
-  // while (true) {
-  //   const healthRegion = await getRegion();
-  //   const health = await getNumberFromRegion(healthRegion);
-  //   console.log(health);
-  // }
 
   const { script } = await inquirer.prompt([
     {
@@ -53,23 +48,28 @@ const initSlack = async () => {
   }
 
   // Start a tunnel using https://github.com/localtunnel/localtunnel
-  await localtunnel({ port, subdomain: 'tob-sr' });
+  const tunnel = await localtunnel({ port, subdomain: process.env.TUNNEL_SUBDOMAIN });
+
+  tunnel.on('error', (error) => {
+    console.log(error);
+  });
 
   const slackEvents = createEventAdapter(slackSigningSecret);
 
   slackEvents.on('message', (event: { text: string }) => {
-    if (event.text === 'quit') {
+    if (event.text.toLowerCase() === 'quit') {
       process.exit();
-    } else if (event.text === 'pause') {
+    } else if (event.text.toLowerCase() === 'pause') {
       state.setPaused(!state.paused);
     }
   });
 
   // Start the built-in server
-  const server = await slackEvents.start(port);
+  await slackEvents.start(port);
 
   // Log a message when the server is ready
-  console.log(`Listening for events on ${server?.address()}`);
+  console.log(blue(`Server started at localhost:${port}`));
+  console.log(blue(`Listening for events at ${tunnel.url}`));
 };
 
 (async () => {

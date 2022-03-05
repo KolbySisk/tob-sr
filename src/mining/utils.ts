@@ -12,12 +12,15 @@ export const runSetup = (): Promise<ScriptInfo> => {
 
     console.log(magenta('select ore1'));
     const ore1Region = await getRegion();
+    const ore1Image = await screen.grabRegion(ore1Region);
 
     console.log(magenta('select ore2'));
     const ore2Region = await getRegion();
+    const ore2Image = await screen.grabRegion(ore2Region);
 
     console.log(magenta('select ore3'));
     const ore3Region = await getRegion();
+    const ore3Image = await screen.grabRegion(ore3Region);
 
     console.log(magenta('select region to watch'));
     const watchRegion = await getRegion();
@@ -25,9 +28,9 @@ export const runSetup = (): Promise<ScriptInfo> => {
     resolve({
       inventoryItemRegions,
       watchRegion,
-      ore1Image: await screen.grabRegion(ore1Region),
-      ore2Image: await screen.grabRegion(ore2Region),
-      ore3Image: await screen.grabRegion(ore3Region),
+      ore1Image,
+      ore2Image,
+      ore3Image,
     });
   });
 };
