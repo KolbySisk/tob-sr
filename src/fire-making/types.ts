@@ -1,7 +1,6 @@
 import { Image, Point, Region } from '@nut-tree/nut-js';
 
 export type ScriptInfo = {
-  inventoryItemRegions: Region[];
   bankBoothImage: Image;
   logsImage: Image;
   closeBankPoint: Point;

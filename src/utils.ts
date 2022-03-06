@@ -47,7 +47,7 @@ export const initControls = () => {
     // Pause/Resume when p is pressed
     else if (key.rawcode === 80) {
       console.log(state.paused ? 'resuming' : 'pausing');
-      state.setPaused(!state.paused);
+      state.paused = !state.paused;
     }
   });
 };
@@ -211,26 +211,6 @@ export const getRegion = (): Promise<Region> => {
   });
 };
 
-export const getInventoryItemRegions = async (): Promise<Region[]> => {
-  const inventoryRegion = await getRegion();
-  const inventoryItemRegions: Region[] = [];
-
-  const inventoryItemWidth = inventoryRegion.width / 4;
-  const inventoryItemHeight = inventoryRegion.height / 7;
-
-  for (let x = 0; x < 4; x++) {
-    for (let y = 0; y < 7; y++) {
-      const left = inventoryRegion.left + x * inventoryItemWidth;
-      const top = inventoryRegion.top + y * inventoryItemHeight;
-
-      const inventoryItemRegion = new Region(left, top, inventoryItemWidth, inventoryItemHeight);
-      inventoryItemRegions.push(inventoryItemRegion);
-    }
-  }
-
-  return inventoryItemRegions;
-};
-
 export const dropInventory = async (inventoryItemRegions: Region[]) => {
   for (const inventoryItemRegion of inventoryItemRegions) {
     await clickPoint({
@@ -353,4 +333,19 @@ export const getNumberFromRegion = async (
       retry(`${error}`);
     }
   });
+};
+
+export const walkRight = async () => {
+  if (!state.activeWindowRegion) throw new Error('state.activeWindowRegion not found');
+
+  const point = new Point(
+    state.activeWindowRegion.width / 2 +
+      state.activeWindowRegion.width * 0.18 +
+      state.activeWindowRegion.left,
+    state.activeWindowRegion.height / 2 + state.activeWindowRegion.top + 25
+  );
+
+  await clickPoint({ point });
+
+  await sleep(2100);
 };

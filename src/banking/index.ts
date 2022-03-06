@@ -8,7 +8,7 @@ import { state } from '..';
 
 export let trainingMethod: TrainingMethod;
 
-const iterationsToRun = 2100; // TODO: move to console
+const iterationsToRun = 2000; // TODO: move to console
 let iterationCount = 0;
 
 const doActions = async (actions: Actions) => {

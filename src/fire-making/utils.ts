@@ -1,13 +1,10 @@
-import { screen } from '@nut-tree/nut-js';
-import { magenta } from 'colorette';
-import { getInventoryItemRegions, getPoint, getRegion } from '../utils';
+import { Image, Region, screen, sleep } from '@nut-tree/nut-js';
+import { magenta, red } from 'colorette';
+import { getPoint, getRegion, walkRight } from '../utils';
 import { ScriptInfo } from './types';
 
 export const runSetup = (): Promise<ScriptInfo> => {
   return new Promise(async (resolve) => {
-    console.log(magenta('select inventory'));
-    const inventoryItemRegions = await getInventoryItemRegions();
-
     console.log(magenta('select bank booth'));
     const bankBoothRegion = await getRegion();
     const bankBoothImage = await screen.grabRegion(bankBoothRegion);
@@ -31,11 +28,10 @@ export const runSetup = (): Promise<ScriptInfo> => {
     console.log(magenta('select starting spot 2'));
     const startPoint2 = await getPoint();
 
-    console.log(magenta('select east minimap'));
+    console.log(magenta('click east minimap'));
     const eastMinimapPoint = await getPoint();
 
     resolve({
-      inventoryItemRegions,
       bankBoothImage,
       logsImage,
       closeBankPoint,
@@ -43,5 +39,31 @@ export const runSetup = (): Promise<ScriptInfo> => {
       startPoint2,
       eastMinimapPoint,
     });
+  });
+};
+
+export const findBankBoothRegion = async (
+  bankBoothImage: Image,
+  retryCount: number = 0
+): Promise<Region> => {
+  return new Promise(async (resolve) => {
+    const retry = async (error: string) => {
+      console.log(`retrying find bank: ${retryCount}`);
+      console.log(error);
+      if (retryCount === 7) {
+        console.log(red('Find bank reached fail limit. Time to bail'));
+        process.exit(1);
+      }
+      resolve(await findBankBoothRegion(bankBoothImage, retryCount + 1));
+    };
+
+    try {
+      await walkRight();
+      await sleep(500);
+      const bankRegion = await screen.find(bankBoothImage);
+      resolve(bankRegion);
+    } catch (error) {
+      retry(`${error}`);
+    }
   });
 };

@@ -63,14 +63,16 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
 };
 
 const runBot = async (scriptInfo: ScriptInfo) => {
+  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions not found');
+
   while (true) {
-    await checkInventory(scriptInfo.inventoryItemRegions);
+    await checkInventory(state.inventoryItemRegions);
     await mineOre(scriptInfo.watchRegion, scriptInfo.ore1Image);
 
-    await checkInventory(scriptInfo.inventoryItemRegions);
+    await checkInventory(state.inventoryItemRegions);
     await mineOre(scriptInfo.watchRegion, scriptInfo.ore2Image);
 
-    await checkInventory(scriptInfo.inventoryItemRegions);
+    await checkInventory(state.inventoryItemRegions);
     await mineOre(scriptInfo.watchRegion, scriptInfo.ore3Image);
 
     await randomSleep();

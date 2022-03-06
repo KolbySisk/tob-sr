@@ -1,14 +1,11 @@
 import { blue, magenta } from 'colorette';
 import { screen } from '@nut-tree/nut-js';
-import { getInventoryItemRegions, getRegion } from '../utils';
+import { getRegion } from '../utils';
 import { ScriptInfo } from './types';
 
 export const runSetup = (): Promise<ScriptInfo> => {
   return new Promise(async (resolve) => {
     console.log(blue('Make sure your inventory is empty and click-to-drop is on.'));
-
-    console.log(magenta('select inventory'));
-    const inventoryItemRegions = await getInventoryItemRegions();
 
     console.log(magenta('select ore1'));
     const ore1Region = await getRegion();
@@ -26,7 +23,6 @@ export const runSetup = (): Promise<ScriptInfo> => {
     const watchRegion = await getRegion();
 
     resolve({
-      inventoryItemRegions,
       watchRegion,
       ore1Image,
       ore2Image,

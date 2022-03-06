@@ -1,15 +1,12 @@
+import { Region } from '@nut-tree/nut-js';
+
 export class State {
   paused: boolean;
+  activeWindowRegion: Region | undefined;
+  inventoryRegion: Region | undefined;
+  inventoryItemRegions: Region[] | undefined;
 
   constructor({ paused }: { paused: boolean }) {
-    this.paused = paused;
-  }
-
-  getPaused() {
-    return this.paused;
-  }
-
-  setPaused(paused: boolean) {
     this.paused = paused;
   }
 }

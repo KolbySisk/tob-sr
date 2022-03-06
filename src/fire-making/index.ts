@@ -1,12 +1,17 @@
-import { centerOf, Image, OptionalSearchParameters, Region, screen, sleep } from '@nut-tree/nut-js';
+import { centerOf, Region, screen, sleep } from '@nut-tree/nut-js';
 import { state } from '..';
-import { clickPoint, pause, randomSleep } from '../utils';
+import {
+  clickPoint,
+  getFuzzyNumber,
+  inventoryItemRegionHasItem,
+  pause,
+  randomSleep,
+} from '../utils';
 import { ScriptInfo } from './types';
-import { runSetup } from './utils';
+import { findBankBoothRegion, runSetup } from './utils';
 
 let useStartPoint1 = false;
 let logsBurnedCount = 0;
-const searchOptions = new OptionalSearchParameters(undefined, 0.96);
 
 const lightLog = async (inventoryItemRegions: Region[]) => {
   if (state.paused) await pause();
@@ -26,40 +31,63 @@ const lightLog = async (inventoryItemRegions: Region[]) => {
     fuzzy: true,
   });
 
-  await sleep(3000);
+  await sleep(getFuzzyNumber(4000, 50));
 
   logsBurnedCount++;
 };
 
+const checkLogsAreBurning = async (inventoryItemRegions: Region[]) => {
+  let failCount = 0;
+
+  if (await inventoryItemRegionHasItem(inventoryItemRegions[logsBurnedCount])) failCount++;
+  if (await inventoryItemRegionHasItem(inventoryItemRegions[logsBurnedCount - 1])) failCount++;
+  if (await inventoryItemRegionHasItem(inventoryItemRegions[logsBurnedCount - 2])) failCount++;
+
+  if (failCount >= 2) throw new Error(`Log didn't burn`);
+};
+
 const runBot = async (scriptInfo: ScriptInfo) => {
+  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions not found');
+
   while (true) {
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
-    await lightLog(scriptInfo.inventoryItemRegions);
+    await sleep(2000);
+
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await lightLog(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions);
 
     useStartPoint1 = !useStartPoint1;
     logsBurnedCount = 0;
@@ -70,29 +98,15 @@ const runBot = async (scriptInfo: ScriptInfo) => {
       fuzzy: false,
     });
 
-    await sleep(4000);
-
-    await clickPoint({
-      point: scriptInfo.eastMinimapPoint,
-      speed: 1000,
-      fuzzy: false,
-    });
-
     await sleep(7000);
 
-    const bankRegion = await screen.waitFor(scriptInfo.bankBoothImage, 10000, 500, searchOptions);
+    console.log('Searching for bank');
+    const bankRegion = await findBankBoothRegion(scriptInfo.bankBoothImage);
     await clickPoint({
       point: await centerOf(bankRegion),
-      speed: 1000,
+      speed: 10000,
       fuzzy: true,
     });
-    await clickPoint({
-      point: await centerOf(bankRegion),
-      speed: 1000,
-      fuzzy: true,
-    });
-
-    // await sleep(3000);
 
     const logsRegion = await screen.waitFor(scriptInfo.logsImage, 7000, 500);
     await clickPoint({
@@ -113,7 +127,6 @@ const runBot = async (scriptInfo: ScriptInfo) => {
       fuzzy: true,
     });
 
-    await sleep(1000);
     await randomSleep();
   }
 };
