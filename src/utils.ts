@@ -20,6 +20,8 @@ import {
   Region,
   centerOf,
   sleep,
+  Image,
+  OptionalSearchParameters,
 } from '@nut-tree/nut-js';
 
 import { state } from './';
@@ -74,7 +76,7 @@ export const getFuzzyNumber = (number: number, bound: number) => {
   return _.random(number - bound, number + bound);
 };
 
-export const getFuzzyPoint = (point: Point, bounds = 6): Point => {
+export const getFuzzyPoint = (point: Point, bounds = 5): Point => {
   return {
     x: getFuzzyNumber(point.x, bounds),
     y: getFuzzyNumber(point.y, bounds),
@@ -348,4 +350,40 @@ export const walkRight = async () => {
   await clickPoint({ point });
 
   await sleep(2100);
+};
+
+export const findImageRegion = async (
+  image: Image,
+  retryCount: number = 0
+): Promise<Region | false> => {
+  const searchOptions = new OptionalSearchParameters(state.activeWindowRegion, 0.95);
+
+  return new Promise(async (resolve) => {
+    const retry = async (error: string) => {
+      console.log(`retrying find image: ${retryCount}`);
+      console.log(error);
+      if (retryCount === 7) {
+        resolve(false);
+        return;
+      }
+      resolve(await findImageRegion(image, retryCount + 1));
+      return;
+    };
+
+    try {
+      const imageRegion = await screen.find(image, searchOptions);
+      resolve(imageRegion);
+    } catch (error) {
+      retry(`${error}`);
+    }
+  });
+};
+
+export const clickMinimap = async (leftPercent: number, topPercent: number) => {
+  if (!state.minimapRegion) throw new Error('state.minimapRegion not found');
+
+  const x = state.minimapRegion.left + state.minimapRegion.width * (leftPercent / 100);
+  const y = state.minimapRegion.top + state.minimapRegion.height * (topPercent / 100);
+  const point = new Point(x, y);
+  await clickPoint({ point, fuzzy: false });
 };
