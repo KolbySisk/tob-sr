@@ -31,7 +31,7 @@ import { Keycode, MouseEvent } from './types';
 import '@nut-tree/template-matcher';
 
 screen.config.resourceDirectory = 'resources';
-screen.config.autoHighlight = true;
+screen.config.autoHighlight = false;
 screen.config.confidence = 0.95;
 
 export const pause = async () => {
@@ -354,19 +354,20 @@ export const walkRight = async () => {
 
 export const findImageRegion = async (
   image: Image,
+  numberOfRetries: number,
   retryCount: number = 0
 ): Promise<Region | false> => {
-  const searchOptions = new OptionalSearchParameters(state.activeWindowRegion, 0.95);
+  const searchOptions = new OptionalSearchParameters(state.activeWindowRegion, 0.955, true);
 
   return new Promise(async (resolve) => {
     const retry = async (error: string) => {
       console.log(`retrying find image: ${retryCount}`);
       console.log(error);
-      if (retryCount === 7) {
+      if (retryCount === numberOfRetries) {
         resolve(false);
         return;
       }
-      resolve(await findImageRegion(image, retryCount + 1));
+      resolve(await findImageRegion(image, numberOfRetries, retryCount + 1));
       return;
     };
 

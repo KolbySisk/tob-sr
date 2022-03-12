@@ -7,7 +7,7 @@ export type Obstacle = {
   name: string;
   imageName: string;
   preImageName?: string;
-  retryImageName?: string;
+  imageAtMarkName?: string;
   sleepTime: number;
   failFunction?: () => void;
 };
@@ -29,7 +29,7 @@ const obstacles: Obstacle[] = [
     name: 'window',
     imageName: 'window',
     preImageName: 'prewindow',
-    sleepTime: 5600,
+    sleepTime: 6600,
     failFunction: async () => {
       await clickMinimap(55, 80);
       await sleep(8000);
@@ -57,12 +57,13 @@ const obstacles: Obstacle[] = [
   {
     name: 'monkeybars',
     imageName: 'monkeybars',
+    imageAtMarkName: 'monkeybars-mark',
     sleepTime: 10000,
   },
   {
     name: 'tree2',
     imageName: 'tree2',
-    retryImageName: 'retree2',
+    imageAtMarkName: 'tree2-mark',
     sleepTime: 6600,
   },
   {
@@ -72,15 +73,20 @@ const obstacles: Obstacle[] = [
   },
 ];
 
-const attemptObstacle = async (obstacle: Obstacle) => {
+const attemptObstacle = async (obstacle: Obstacle, markFound: boolean) => {
   console.log(`Attempting ${obstacle.name} obstacle`);
 
   const preImageRegion = obstacle.preImageName
-    ? await findImageRegion(await imageResource(`agility/${obstacle.preImageName}.png`))
+    ? await findImageRegion(await imageResource(`agility/${obstacle.preImageName}.png`), 1)
     : true;
 
   const imageRegion = await findImageRegion(
-    await imageResource(`agility/${obstacle.imageName}.png`)
+    await imageResource(
+      `agility/${
+        markFound && obstacle.imageAtMarkName ? obstacle.imageAtMarkName : obstacle.imageName
+      }.png`
+    ),
+    2
   );
 
   if (preImageRegion && imageRegion) {
@@ -98,29 +104,35 @@ const attemptObstacle = async (obstacle: Obstacle) => {
       console.log(`Failed attempting ${obstacle.name}. Running fail function`);
       await obstacle.failFunction();
       obstacleStep = 0;
-    } else if (obstacle.retryImageName) {
-      const retryImageRegion = await findImageRegion(
-        await imageResource(`agility/${obstacle.retryImageName}.png`)
-      );
-      if (retryImageRegion) {
-        await clickPoint({
-          point: await centerOf(retryImageRegion),
-          speed: 1000,
-          fuzzy: true,
-        });
-      } else {
-        throw new Error();
-      }
     } else {
-      throw new Error();
+      throw new Error(`Obstacle ${obstacle.name} failed`);
     }
   }
+};
+
+const searchForMark = async () => {
+  const imageRegion = await findImageRegion(await imageResource(`agility/mark.png`), 1);
+
+  if (imageRegion) {
+    await clickPoint({
+      point: await centerOf(imageRegion),
+      speed: 1000,
+      fuzzy: true,
+    });
+
+    await sleep(5000);
+
+    return true;
+  }
+
+  return false;
 };
 
 const runBot = async () => {
   while (true) {
     while (obstacleStep !== 9) {
-      await attemptObstacle(obstacles[obstacleStep]);
+      const markFound = await searchForMark();
+      await attemptObstacle(obstacles[obstacleStep], markFound);
     }
 
     await clickMinimap(50, 100);
