@@ -22,6 +22,7 @@ import {
   sleep,
   Image,
   OptionalSearchParameters,
+  imageResource,
 } from '@nut-tree/nut-js';
 
 import { state } from './';
@@ -89,7 +90,7 @@ const easeOut: EasingFunction = (x: number): number => {
 
 export const clickPoint = async ({
   point,
-  speed = 1500,
+  speed = 2000,
   fuzzy,
   easingFunction = easeOut,
 }: {
@@ -102,6 +103,25 @@ export const clickPoint = async ({
   const pointToClick = fuzzy ? getFuzzyPoint(point) : point;
   await mouse.move(straightTo(pointToClick), easingFunction);
   await mouse.leftClick();
+};
+
+export const longClickPoint = async ({
+  point,
+  speed = 2000,
+  fuzzy,
+  easingFunction = easeOut,
+}: {
+  point: Point;
+  speed?: number;
+  fuzzy?: boolean;
+  easingFunction?: EasingFunction;
+}) => {
+  mouse.config.mouseSpeed = getFuzzyNumber(speed, 500); // Pixels per second
+  const pointToClick = fuzzy ? getFuzzyPoint(point) : point;
+  await mouse.move(straightTo(pointToClick), easingFunction);
+  await mouse.pressButton(0);
+  await sleep(700);
+  await mouse.releaseButton(0);
 };
 
 export const pressKey = (keycode: Keycode) => {
@@ -352,12 +372,20 @@ export const walkRight = async () => {
   await sleep(2100);
 };
 
-export const findImageRegion = async (
-  image: Image,
-  numberOfRetries: number,
-  retryCount: number = 0
-): Promise<Region | false> => {
-  const searchOptions = new OptionalSearchParameters(state.activeWindowRegion, 0.955, true);
+export const findImageRegion = async ({
+  image,
+  numberOfRetries,
+  regionToSearch = state.activeWindowRegion!,
+  confidence = 0.955,
+  retryCount = 0,
+}: {
+  image: Image;
+  numberOfRetries: number;
+  regionToSearch?: Region;
+  confidence?: number;
+  retryCount?: number;
+}): Promise<Region | false> => {
+  const searchOptions = new OptionalSearchParameters(regionToSearch, confidence, true);
 
   return new Promise(async (resolve) => {
     const retry = async (error: string) => {
@@ -367,10 +395,17 @@ export const findImageRegion = async (
         resolve(false);
         return;
       }
-      resolve(await findImageRegion(image, numberOfRetries, retryCount + 1));
+      resolve(
+        await findImageRegion({
+          image,
+          numberOfRetries,
+          regionToSearch,
+          confidence,
+          retryCount: retryCount + 1,
+        })
+      );
       return;
     };
-
     try {
       const imageRegion = await screen.find(image, searchOptions);
       resolve(imageRegion);
@@ -387,4 +422,37 @@ export const clickMinimap = async (leftPercent: number, topPercent: number) => {
   const y = state.minimapRegion.top + state.minimapRegion.height * (topPercent / 100);
   const point = new Point(x, y);
   await clickPoint({ point, fuzzy: false });
+};
+
+export const moveMouseDown = async (pixelsToMove: number) => {
+  const point = await mouse.getPosition();
+  point.y += pixelsToMove;
+
+  await mouse.move(straightTo(point), easeOut);
+};
+
+export const findAndClickImage = async (
+  imagePath: string,
+  numberOfRetries: number,
+  confidence: number = 0.95,
+  throwIfNotFound: boolean = true
+) => {
+  const imageRegion = await findImageRegion({
+    image: await imageResource(imagePath),
+    numberOfRetries,
+    confidence,
+  });
+
+  if (imageRegion) {
+    await clickPoint({
+      point: await centerOf(imageRegion),
+      speed: 5000,
+      fuzzy: true,
+    });
+
+    return true;
+  } else {
+    if (throwIfNotFound) throw new Error(`${imagePath} not found`);
+    else return false;
+  }
 };

@@ -77,17 +77,20 @@ const attemptObstacle = async (obstacle: Obstacle, markFound: boolean) => {
   console.log(`Attempting ${obstacle.name} obstacle`);
 
   const preImageRegion = obstacle.preImageName
-    ? await findImageRegion(await imageResource(`agility/${obstacle.preImageName}.png`), 1)
+    ? await findImageRegion({
+        image: await imageResource(`agility/${obstacle.preImageName}.png`),
+        numberOfRetries: 1,
+      })
     : true;
 
-  const imageRegion = await findImageRegion(
-    await imageResource(
+  const imageRegion = await findImageRegion({
+    image: await imageResource(
       `agility/${
         markFound && obstacle.imageAtMarkName ? obstacle.imageAtMarkName : obstacle.imageName
       }.png`
     ),
-    2
-  );
+    numberOfRetries: 2,
+  });
 
   if (preImageRegion && imageRegion) {
     await clickPoint({
@@ -111,7 +114,10 @@ const attemptObstacle = async (obstacle: Obstacle, markFound: boolean) => {
 };
 
 const searchForMark = async () => {
-  const imageRegion = await findImageRegion(await imageResource(`agility/mark.png`), 1);
+  const imageRegion = await findImageRegion({
+    image: await imageResource(`agility/mark.png`),
+    numberOfRetries: 1,
+  });
 
   if (imageRegion) {
     await clickPoint({
@@ -135,7 +141,7 @@ const runBot = async () => {
       await attemptObstacle(obstacles[obstacleStep], markFound);
     }
 
-    await clickMinimap(50, 100);
+    await clickMinimap(50, 98);
     await sleep(7000);
 
     await clickMinimap(25, 92);

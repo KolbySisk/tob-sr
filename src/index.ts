@@ -6,11 +6,12 @@ import { blue } from 'colorette';
 import localtunnel from 'localtunnel';
 import inquirer from 'inquirer';
 import { State } from './state';
-import { clickMinimap, initControls } from './utils';
+import { initControls } from './utils';
 import * as banking from './banking';
 import * as mining from './mining';
 import * as agility from './agility';
 import * as fireMaking from './fire-making';
+import * as runeCrafting from './rune-crafting';
 
 import 'dotenv/config';
 
@@ -23,11 +24,13 @@ const scripts: {
   Mining: typeof mining;
   Agility: typeof agility;
   FireMaking: typeof fireMaking;
+  RuneCrafting: typeof runeCrafting;
 } = {
   Banking: banking,
   Mining: mining,
   Agility: agility,
   FireMaking: fireMaking,
+  RuneCrafting: runeCrafting,
 };
 
 const init = async () => {
