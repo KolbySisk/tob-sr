@@ -17,8 +17,6 @@ import 'dotenv/config';
 
 export const state = new State({ paused: false });
 
-const blueStackBorderSize = 35;
-
 const scripts: {
   Banking: typeof banking;
   Mining: typeof mining;
@@ -49,14 +47,11 @@ const init = async () => {
   const inventoryLeft =
     activeWindowRegion.left +
     activeWindowRegion.width -
-    blueStackBorderSize -
     inventoryWidth -
     activeWindowRegion.width * 0.058;
   const inventoryTop =
     activeWindowRegion.top +
-    blueStackBorderSize +
     activeWindowRegion.height -
-    blueStackBorderSize -
     inventoryHeight -
     activeWindowRegion.height * 0.06;
   const inventoryRegion = new Region(inventoryLeft, inventoryTop, inventoryWidth, inventoryHeight);
@@ -83,11 +78,9 @@ const init = async () => {
   const minimapLeft =
     activeWindowRegion.left +
     activeWindowRegion.width -
-    blueStackBorderSize -
     minimapWidthAndHeight -
     activeWindowRegion.width * 0.017;
-  const minimapTop =
-    activeWindowRegion.top + blueStackBorderSize + activeWindowRegion.height * 0.012;
+  const minimapTop = activeWindowRegion.top + activeWindowRegion.height * 0.012;
   const minimapRegion = new Region(
     minimapLeft,
     minimapTop,

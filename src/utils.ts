@@ -102,6 +102,7 @@ export const clickPoint = async ({
   mouse.config.mouseSpeed = getFuzzyNumber(speed, 500); // Pixels per second
   const pointToClick = fuzzy ? getFuzzyPoint(point) : point;
   await mouse.move(straightTo(pointToClick), easingFunction);
+  await sleep(200);
   await mouse.leftClick();
 };
 

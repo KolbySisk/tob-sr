@@ -14,6 +14,7 @@ import '@nut-tree/template-matcher';
 import { state } from '..';
 
 let runCount = 0;
+const startingNecklaceChargeCount = 16;
 
 const fillPouches = async () => {
   if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
@@ -97,6 +98,30 @@ const getNewRing = async () => {
   await sleep(1000);
 
   await keyboard.type(Key.Escape);
+  await keyboard.type(Key.F4);
+  await keyboard.type(Key.F1);
+
+  const inventoryItem8: Point = await centerOf(state.inventoryItemRegions[7]);
+  await clickPoint({ point: inventoryItem8 });
+
+  await findAndClickImage(`rune-crafting/bank.png`, 2, 0.92);
+};
+
+const getNewNecklace = async () => {
+  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
+
+  const necklaceRegion = await findImageRegion({
+    image: await imageResource(`rune-crafting/necklace.png`),
+    numberOfRetries: 1,
+  });
+  if (!necklaceRegion) throw new Error('necklace not found');
+
+  await longClickPoint({ point: await centerOf(necklaceRegion) });
+  await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
+  await sleep(1000);
+
+  await keyboard.type(Key.Escape);
+  await keyboard.type(Key.F4);
   await keyboard.type(Key.F1);
 
   const inventoryItem8: Point = await centerOf(state.inventoryItemRegions[7]);
@@ -147,6 +172,10 @@ const runBot = async () => {
 
     if (runCount % 4 === 0) {
       await getNewRing();
+    }
+
+    if (runCount % 16 === 0 || runCount === startingNecklaceChargeCount) {
+      await getNewNecklace();
     }
 
     console.log(`run count: ${runCount}`);
