@@ -42,18 +42,12 @@ const init = async () => {
   console.log(`Active window region saved as: ${activeWindowRegion}`);
 
   // Calculate the inventory size and position based on the window region
-  const inventoryWidth = activeWindowRegion.width * 0.21;
-  const inventoryHeight = activeWindowRegion.height * 0.5;
+  const inventoryWidth = activeWindowRegion.width * 0.2135;
+  const inventoryHeight = activeWindowRegion.height * 0.52;
   const inventoryLeft =
-    activeWindowRegion.left +
-    activeWindowRegion.width -
-    inventoryWidth -
-    activeWindowRegion.width * 0.058;
+    activeWindowRegion.width - inventoryWidth - activeWindowRegion.width * 0.0625;
   const inventoryTop =
-    activeWindowRegion.top +
-    activeWindowRegion.height -
-    inventoryHeight -
-    activeWindowRegion.height * 0.06;
+    activeWindowRegion.height - inventoryHeight - activeWindowRegion.height * 0.0648;
   const inventoryRegion = new Region(inventoryLeft, inventoryTop, inventoryWidth, inventoryHeight);
   state.inventoryRegion = inventoryRegion;
   screen.highlight(inventoryRegion);
@@ -74,13 +68,10 @@ const init = async () => {
   state.inventoryItemRegions = inventoryItemRegions;
 
   // Calculate the minimap size and location
-  const minimapWidthAndHeight = activeWindowRegion.width * 0.167;
+  const minimapWidthAndHeight = activeWindowRegion.width * 0.17;
   const minimapLeft =
-    activeWindowRegion.left +
-    activeWindowRegion.width -
-    minimapWidthAndHeight -
-    activeWindowRegion.width * 0.017;
-  const minimapTop = activeWindowRegion.top + activeWindowRegion.height * 0.012;
+    activeWindowRegion.width - minimapWidthAndHeight - activeWindowRegion.width * 0.0215;
+  const minimapTop = activeWindowRegion.height * 0.015;
   const minimapRegion = new Region(
     minimapLeft,
     minimapTop,
@@ -138,6 +129,6 @@ const initSlack = async () => {
 };
 
 (async () => {
-  await initSlack();
+  //await initSlack();
   init();
 })();

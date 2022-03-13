@@ -97,7 +97,9 @@ const getNewRing = async () => {
   await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
   await sleep(1000);
 
-  await keyboard.type(Key.Escape);
+  await findAndClickImage(`rune-crafting/close.png`, 2, 0.94);
+  await sleep(1000);
+
   await keyboard.type(Key.F4);
   await keyboard.type(Key.F1);
 
@@ -120,7 +122,9 @@ const getNewNecklace = async () => {
   await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
   await sleep(1000);
 
-  await keyboard.type(Key.Escape);
+  await findAndClickImage(`rune-crafting/close.png`, 2, 0.94);
+  await sleep(1000);
+
   await keyboard.type(Key.F4);
   await keyboard.type(Key.F1);
 
@@ -133,39 +137,46 @@ const getNewNecklace = async () => {
 const runBot = async () => {
   while (true) {
     await sleep(2000);
+
     await findAndClickImage(`rune-crafting/essence.png`, 2);
-    // await fillPouches();
-    // await findAndClickImage(`rune-crafting/essence.png`, 1);
     await sleep(1000);
-    await keyboard.type(Key.Escape);
-    // await sleep(1000);
+
+    await findAndClickImage(`rune-crafting/close.png`, 2, 0.94);
+    await sleep(1000);
+
     await teleportToDuelArena();
     await sleep(3000);
+
     await clickMinimap(50, 3);
     await sleep(13000);
+
     await findAndClickImage(`rune-crafting/ruins.png`, 2);
     await sleep(3000);
+
     await clickMinimap(70, 70);
     await sleep(2000);
+
     await keyboard.type(Key.F2);
     await sleep(500);
+
     await findAndClickImage(`rune-crafting/imbue.png`, 3, 0.94);
     await keyboard.type(Key.F1);
     await findAndClickImage(`rune-crafting/earth-rune.png`, 1);
     await findAndClickImage(`rune-crafting/alter.png`, 1);
-    // await emptyPouches();
-    // await findAndClickImage(`rune-crafting/earth-rune.png`, 1);
-    // await findAndClickImage(`rune-crafting/alter.png`, 1);
     await sleep(2000);
+
     await teleportToCastleWars();
     await sleep(5000);
+
     await findAndClickImage(`rune-crafting/bank-icon.png`, 2, 0.94);
     await sleep(5000);
+
     const bankClicked = await findAndClickImage(`rune-crafting/bank.png`, 8, 0.94, false);
     if (!bankClicked) {
       await findAndClickImage(`rune-crafting/bank2.png`, 8, 0.94);
     }
     await sleep(2000);
+
     await findAndClickImage(`rune-crafting/lava-rune.png`, 2, 0.94);
 
     runCount++;
