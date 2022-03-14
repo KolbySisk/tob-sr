@@ -1,20 +1,17 @@
-import { centerOf, imageResource, Key, keyboard, mouse, Point, sleep } from '@nut-tree/nut-js';
+import { centerOf, imageResource, Key, keyboard, Point, sleep } from '@nut-tree/nut-js';
 import {
   clickMinimap,
-  clickPoint,
   findAndClickImage,
   findImageRegion,
   getFuzzyNumber,
   longClickPoint,
-  moveMouseDown,
-  randomSleep,
 } from '../utils';
 
 import '@nut-tree/template-matcher';
 import { state } from '..';
 
 let runCount = 0;
-const startingNecklaceChargeCount = 16;
+const startingNecklaceChargeCount = 6;
 
 const fillPouches = async () => {
   if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
@@ -53,7 +50,7 @@ const teleportToDuelArena = async () => {
 
   await keyboard.type(Key.F4);
   await keyboard.type(Key.F3);
-  await sleep(1000);
+  await sleep(getFuzzyNumber(1500, 500));
 
   const ringRegion = await findImageRegion({
     image: await imageResource(`rune-crafting/ring.png`),
@@ -95,18 +92,11 @@ const getNewRing = async () => {
 
   await longClickPoint({ point: await centerOf(ringRegion) });
   await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
-  await sleep(1000);
-
-  await findAndClickImage(`rune-crafting/close.png`, 2, 0.94);
-  await sleep(1000);
-
-  await keyboard.type(Key.F4);
-  await keyboard.type(Key.F1);
+  await sleep(getFuzzyNumber(1500, 500));
 
   const inventoryItem8: Point = await centerOf(state.inventoryItemRegions[7]);
-  await clickPoint({ point: inventoryItem8 });
-
-  await findAndClickImage(`rune-crafting/bank.png`, 2, 0.92);
+  await longClickPoint({ point: inventoryItem8 });
+  await findAndClickImage(`rune-crafting/wear.png`, 2);
 };
 
 const getNewNecklace = async () => {
@@ -120,41 +110,34 @@ const getNewNecklace = async () => {
 
   await longClickPoint({ point: await centerOf(necklaceRegion) });
   await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
-  await sleep(1000);
-
-  await findAndClickImage(`rune-crafting/close.png`, 2, 0.94);
-  await sleep(1000);
-
-  await keyboard.type(Key.F4);
-  await keyboard.type(Key.F1);
+  await sleep(getFuzzyNumber(1500, 500));
 
   const inventoryItem8: Point = await centerOf(state.inventoryItemRegions[7]);
-  await clickPoint({ point: inventoryItem8 });
-
-  await findAndClickImage(`rune-crafting/bank.png`, 2, 0.92);
+  await longClickPoint({ point: inventoryItem8 });
+  await findAndClickImage(`rune-crafting/wear.png`, 2);
 };
 
 const runBot = async () => {
   while (true) {
-    await sleep(2000);
+    await sleep(getFuzzyNumber(3000, 1000));
 
     await findAndClickImage(`rune-crafting/essence.png`, 2);
-    await sleep(1000);
+    await sleep(getFuzzyNumber(1500, 500));
 
     await findAndClickImage(`rune-crafting/close.png`, 2, 0.94);
-    await sleep(1000);
+    await sleep(getFuzzyNumber(1500, 500));
 
     await teleportToDuelArena();
-    await sleep(3000);
+    await sleep(getFuzzyNumber(4000, 1000));
 
-    await clickMinimap(50, 3);
-    await sleep(13000);
+    await clickMinimap(50, 5);
+    await sleep(getFuzzyNumber(12000, 2000));
 
     await findAndClickImage(`rune-crafting/ruins.png`, 2);
-    await sleep(3000);
+    await sleep(getFuzzyNumber(4000, 1000));
 
     await clickMinimap(70, 70);
-    await sleep(2000);
+    await sleep(getFuzzyNumber(3000, 1000));
 
     await keyboard.type(Key.F2);
     await sleep(500);
@@ -163,19 +146,19 @@ const runBot = async () => {
     await keyboard.type(Key.F1);
     await findAndClickImage(`rune-crafting/earth-rune.png`, 1);
     await findAndClickImage(`rune-crafting/alter.png`, 1);
-    await sleep(2000);
+    await sleep(getFuzzyNumber(3000, 1000));
 
     await teleportToCastleWars();
-    await sleep(5000);
+    await sleep(getFuzzyNumber(5000, 1000));
 
     await findAndClickImage(`rune-crafting/bank-icon.png`, 2, 0.94);
-    await sleep(5000);
+    await sleep(getFuzzyNumber(5000, 1000));
 
     const bankClicked = await findAndClickImage(`rune-crafting/bank.png`, 8, 0.94, false);
     if (!bankClicked) {
       await findAndClickImage(`rune-crafting/bank2.png`, 8, 0.94);
     }
-    await sleep(2000);
+    await sleep(getFuzzyNumber(3000, 1000));
 
     await findAndClickImage(`rune-crafting/lava-rune.png`, 2, 0.94);
 
