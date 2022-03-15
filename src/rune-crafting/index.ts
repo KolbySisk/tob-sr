@@ -1,6 +1,7 @@
 import { centerOf, imageResource, Key, keyboard, Point, sleep } from '@nut-tree/nut-js';
 import {
   clickMinimap,
+  clickPoint,
   findAndClickImage,
   findImageRegion,
   getFuzzyNumber,
@@ -11,7 +12,7 @@ import '@nut-tree/template-matcher';
 import { state } from '..';
 
 let runCount = 0;
-const startingNecklaceChargeCount = 6;
+const startingNecklaceChargeCount = 12;
 
 const fillPouches = async () => {
   if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
@@ -48,8 +49,6 @@ const emptyPouches = async () => {
 const teleportToDuelArena = async () => {
   if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
 
-  await keyboard.type(Key.F4);
-  await keyboard.type(Key.F3);
   await sleep(getFuzzyNumber(1500, 500));
 
   const ringRegion = await findImageRegion({
@@ -67,8 +66,6 @@ const teleportToDuelArena = async () => {
 };
 
 const teleportToCastleWars = async () => {
-  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
-
   await keyboard.type(Key.F3);
 
   const ringRegion = await findImageRegion({
@@ -118,10 +115,12 @@ const getNewNecklace = async () => {
 };
 
 const runBot = async () => {
+  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
+
   while (true) {
     await sleep(getFuzzyNumber(3000, 1000));
 
-    await findAndClickImage(`rune-crafting/essence.png`, 2);
+    await findAndClickImage(`rune-crafting/pure-essence.png`, 2);
     await sleep(getFuzzyNumber(1500, 500));
 
     await findAndClickImage(`rune-crafting/close.png`, 2, 0.94);
@@ -130,10 +129,13 @@ const runBot = async () => {
     await teleportToDuelArena();
     await sleep(getFuzzyNumber(4000, 1000));
 
-    await clickMinimap(50, 5);
+    await clickMinimap(45, 5);
     await sleep(getFuzzyNumber(12000, 2000));
 
-    await findAndClickImage(`rune-crafting/ruins.png`, 2);
+    const ruinsFound = await findAndClickImage(`rune-crafting/ruins.png`, 2, 0.95, false);
+    if (!ruinsFound) {
+      await findAndClickImage(`rune-crafting/ruins2.png`, 1);
+    }
     await sleep(getFuzzyNumber(4000, 1000));
 
     await clickMinimap(70, 70);
@@ -160,7 +162,8 @@ const runBot = async () => {
     }
     await sleep(getFuzzyNumber(3000, 1000));
 
-    await findAndClickImage(`rune-crafting/lava-rune.png`, 2, 0.94);
+    const lavaRunePoint: Point = await centerOf(state.inventoryItemRegions[7]);
+    await clickPoint({ point: lavaRunePoint });
 
     runCount++;
 
@@ -168,7 +171,10 @@ const runBot = async () => {
       await getNewRing();
     }
 
-    if (runCount % 16 === 0 || runCount === startingNecklaceChargeCount) {
+    if (
+      (runCount - startingNecklaceChargeCount) % 16 === 0 ||
+      runCount === startingNecklaceChargeCount
+    ) {
       await getNewNecklace();
     }
 
