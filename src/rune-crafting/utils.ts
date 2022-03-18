@@ -6,6 +6,9 @@ import {
   longClickPoint,
   getSmartFuzzyNumber,
   clickPoint,
+  waitUntilStationaryImageFound,
+  getFuzzyPoint,
+  waitUntilImageFound,
 } from '../utils';
 import { state } from '..';
 
@@ -112,17 +115,12 @@ export const getNewNecklace = async () => {
 export const findAndClickRuins = async (retryCount = 0) => {
   if (retryCount === 5) throw new Error('Error finding Ruins');
 
-  const ruinsFound = await findAndClickImage(`rune-crafting/ruins.png`, 10, 0.955, false);
-  if (!ruinsFound) {
-    const ruins2Found = await findAndClickImage(`rune-crafting/ruins2.png`, 10, 0.955, false);
-    if (!ruins2Found) {
-      const ruins3Found = await findAndClickImage(`rune-crafting/ruins3.png`, 10, 0.955, false);
-      if (!ruins3Found) {
-        const ruins4Found = await findAndClickImage(`rune-crafting/ruins4.png`, 10, 0.955, false);
-        if (!ruins4Found) await findAndClickRuins(retryCount + 1);
-      }
-    }
-  }
+  const ruinsRegion = await waitUntilImageFound(
+    await imageResource(`rune-crafting/ruins.png`),
+    20000
+  );
+
+  await clickPoint({ point: getFuzzyPoint(await centerOf(ruinsRegion!)) });
 };
 
 export const getEssenceType = async (): Promise<'pure' | 'daeyalt'> => {
@@ -158,4 +156,16 @@ export const drinkEnergyPot = async () => {
   await findAndClickImage(`rune-crafting/drink.png`, 1);
   await sleep(800);
   await clickPoint({ point: await centerOf(state.inventoryItemRegions[7]) });
+};
+
+export const clickCactusOnMiniMap = async () => {
+  const cactusRegion = await findImageRegion({
+    image: await imageResource(`rune-crafting/cactus.png`),
+    numberOfRetries: 2,
+  });
+  if (!cactusRegion) throw new Error('No cactus');
+  const x = cactusRegion.left + cactusRegion.width / 2;
+  const y = cactusRegion.top;
+  const point = new Point(x, y);
+  await clickPoint({ point, fuzzy: false });
 };

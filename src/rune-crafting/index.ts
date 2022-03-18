@@ -1,9 +1,10 @@
-import { centerOf, imageResource, Key, keyboard, Point, sleep } from '@nut-tree/nut-js';
+import { centerOf, imageResource, Key, keyboard, mouse, Point, sleep } from '@nut-tree/nut-js';
 import {
   askNumber,
   clickMinimap,
   clickPoint,
   findAndClickImage,
+  findImageRegion,
   getFuzzyPoint,
   getSmartFuzzyNumber,
   randomSleep,
@@ -19,6 +20,7 @@ import {
   getNewNecklace,
   getEssenceType,
   drinkEnergyPot,
+  clickCactusOnMiniMap,
 } from './utils';
 
 import { state } from '..';
@@ -46,11 +48,11 @@ const runBot = async () => {
     // Teleport to Duel Arena
     await teleportToDuelArena();
     await waitUntilStationaryImageFound(await imageResource(`rune-crafting/axe.png`), 10000);
+
     await randomSleep();
 
     // Go to ruins
-    await clickMinimap(45, 5);
-    await sleep(getSmartFuzzyNumber(8500));
+    await clickCactusOnMiniMap();
 
     // Click ruins
     await findAndClickRuins();
@@ -100,8 +102,8 @@ const runBot = async () => {
     );
 
     // Deposit lava runes
-    const lavaRunePoint: Point = await centerOf(state.inventoryItemRegions[7]);
-    await clickPoint({ point: lavaRunePoint });
+    await findAndClickImage(`rune-crafting/lava-rune.png`, 2);
+    await sleep(400);
 
     runCount++;
 
