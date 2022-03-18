@@ -21,13 +21,11 @@ const lightLog = async (inventoryItemRegions: Region[]) => {
 
   await clickPoint({
     point: await centerOf(tinderBoxRegion),
-    speed: 1000,
     fuzzy: true,
   });
 
   await clickPoint({
     point: await centerOf(logInventoryItemRegion),
-    speed: 1000,
     fuzzy: true,
   });
 
@@ -94,7 +92,6 @@ const runBot = async (scriptInfo: ScriptInfo) => {
 
     await clickPoint({
       point: scriptInfo.eastMinimapPoint,
-      speed: 1000,
       fuzzy: false,
     });
 
@@ -104,26 +101,22 @@ const runBot = async (scriptInfo: ScriptInfo) => {
     const bankRegion = await findBankBoothRegion(scriptInfo.bankBoothImage);
     await clickPoint({
       point: await centerOf(bankRegion),
-      speed: 10000,
       fuzzy: true,
     });
 
     const logsRegion = await screen.waitFor(scriptInfo.logsImage, 7000, 500);
     await clickPoint({
       point: await centerOf(logsRegion),
-      speed: 1000,
       fuzzy: true,
     });
 
     await clickPoint({
       point: scriptInfo.closeBankPoint,
-      speed: 1000,
       fuzzy: true,
     });
 
     await clickPoint({
       point: useStartPoint1 ? scriptInfo.startPoint1 : scriptInfo.startPoint2,
-      speed: 1000,
       fuzzy: true,
     });
 

@@ -26,7 +26,6 @@ const mineOre = async (watchRegion: Region, oreImage: Image) => {
 
       await clickPoint({
         point: await centerOf(foundOreLocation),
-        speed: 1000,
         fuzzy: true,
       });
 

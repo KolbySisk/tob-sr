@@ -1,12 +1,12 @@
 'use strict';
 
-import { getActiveWindow, Region, screen, sleep } from '@nut-tree/nut-js';
+import { getActiveWindow, imageResource, Region, screen, sleep } from '@nut-tree/nut-js';
 import { createEventAdapter } from '@slack/events-api';
-import { blue } from 'colorette';
+import { blue, red } from 'colorette';
 import localtunnel from 'localtunnel';
 import inquirer from 'inquirer';
 import { State } from './state';
-import { initControls } from './utils';
+import { initControls, waitUntilImageFound } from './utils';
 import * as banking from './banking';
 import * as mining from './mining';
 import * as agility from './agility';
@@ -31,10 +31,19 @@ const scripts: {
   RuneCrafting: runeCrafting,
 };
 
+const testing = async () => {
+  return false;
+};
+
 const init = async () => {
   // Get the active screen and save the region. This is useful for calculations, like finding the inventory.
-  console.log('Select window');
+  console.log(red('Select window: 3 seconds'));
   await sleep(1000);
+  console.log(red('Select window: 2 seconds'));
+  await sleep(1000);
+  console.log(red('Select window: 1 seconds'));
+  await sleep(1000);
+
   const activeWindow = await getActiveWindow();
   const activeWindowRegion = await activeWindow.region;
   state.activeWindowRegion = activeWindowRegion;
@@ -129,6 +138,7 @@ const initSlack = async () => {
 };
 
 (async () => {
-  //await initSlack();
+  if (await testing()) return;
   init();
+  await initSlack();
 })();

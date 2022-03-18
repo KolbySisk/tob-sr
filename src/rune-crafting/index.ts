@@ -1,174 +1,118 @@
 import { centerOf, imageResource, Key, keyboard, Point, sleep } from '@nut-tree/nut-js';
 import {
+  askNumber,
   clickMinimap,
   clickPoint,
   findAndClickImage,
-  findImageRegion,
-  getFuzzyNumber,
-  longClickPoint,
+  getFuzzyPoint,
+  getSmartFuzzyNumber,
+  randomSleep,
+  waitUntilImageFound,
+  waitUntilStationaryImageFound,
 } from '../utils';
 
-import '@nut-tree/template-matcher';
+import {
+  teleportToDuelArena,
+  findAndClickRuins,
+  teleportToCastleWars,
+  getNewRing,
+  getNewNecklace,
+  getEssenceType,
+  drinkEnergyPot,
+} from './utils';
+
 import { state } from '..';
 
 let runCount = 0;
-const startingNecklaceChargeCount = 12;
-
-const fillPouches = async () => {
-  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
-
-  const inventoryItem1: Point = await centerOf(state.inventoryItemRegions[0]);
-  await longClickPoint({ point: inventoryItem1 });
-  await findAndClickImage(`rune-crafting/fill.png`, 2);
-
-  const inventoryItem2: Point = await centerOf(state.inventoryItemRegions[1]);
-  await longClickPoint({ point: inventoryItem2 });
-  await findAndClickImage(`rune-crafting/fill.png`, 2);
-
-  const inventoryItem3: Point = await centerOf(state.inventoryItemRegions[2]);
-  await longClickPoint({ point: inventoryItem3 });
-  await findAndClickImage(`rune-crafting/fill.png`, 2);
-};
-
-const emptyPouches = async () => {
-  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
-
-  const inventoryItem1: Point = await centerOf(state.inventoryItemRegions[0]);
-  await longClickPoint({ point: inventoryItem1 });
-  await findAndClickImage(`rune-crafting/empty.png`, 2);
-
-  const inventoryItem2: Point = await centerOf(state.inventoryItemRegions[1]);
-  await longClickPoint({ point: inventoryItem2 });
-  await findAndClickImage(`rune-crafting/empty.png`, 2);
-
-  const inventoryItem3: Point = await centerOf(state.inventoryItemRegions[2]);
-  await longClickPoint({ point: inventoryItem3 });
-  await findAndClickImage(`rune-crafting/empty.png`, 2);
-};
-
-const teleportToDuelArena = async () => {
-  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
-
-  await sleep(getFuzzyNumber(1500, 500));
-
-  const ringRegion = await findImageRegion({
-    image: await imageResource(`rune-crafting/ring.png`),
-    numberOfRetries: 1,
-  });
-  if (!ringRegion) throw new Error('ring not found');
-
-  await longClickPoint({ point: await centerOf(ringRegion) });
-
-  const duelArenaFound = await findAndClickImage(`rune-crafting/duel-arena.png`, 1, 0.95, false);
-  if (!duelArenaFound) {
-    await findAndClickImage(`rune-crafting/duel-arena2.png`, 1, 0.95);
-  }
-};
-
-const teleportToCastleWars = async () => {
-  await keyboard.type(Key.F3);
-
-  const ringRegion = await findImageRegion({
-    image: await imageResource(`rune-crafting/ring.png`),
-    numberOfRetries: 1,
-  });
-  if (!ringRegion) throw new Error('ring not found');
-
-  await longClickPoint({ point: await centerOf(ringRegion) });
-  await findAndClickImage(`rune-crafting/castle-wars.png`, 1);
-};
-
-const getNewRing = async () => {
-  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
-
-  const ringRegion = await findImageRegion({
-    image: await imageResource(`rune-crafting/ring-bank.png`),
-    numberOfRetries: 1,
-  });
-  if (!ringRegion) throw new Error('ring not found');
-
-  await longClickPoint({ point: await centerOf(ringRegion) });
-  await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
-  await sleep(getFuzzyNumber(1500, 500));
-
-  const inventoryItem8: Point = await centerOf(state.inventoryItemRegions[7]);
-  await longClickPoint({ point: inventoryItem8 });
-  await findAndClickImage(`rune-crafting/wear.png`, 2);
-};
-
-const getNewNecklace = async () => {
-  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
-
-  const necklaceRegion = await findImageRegion({
-    image: await imageResource(`rune-crafting/necklace.png`),
-    numberOfRetries: 1,
-  });
-  if (!necklaceRegion) throw new Error('necklace not found');
-
-  await longClickPoint({ point: await centerOf(necklaceRegion) });
-  await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
-  await sleep(getFuzzyNumber(1500, 500));
-
-  const inventoryItem8: Point = await centerOf(state.inventoryItemRegions[7]);
-  await longClickPoint({ point: inventoryItem8 });
-  await findAndClickImage(`rune-crafting/wear.png`, 2);
-};
+let startingNecklaceChargeCount: number;
+let essenceType: 'pure' | 'daeyalt';
 
 const runBot = async () => {
   if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
 
+  await sleep(getSmartFuzzyNumber(3000));
+
   while (true) {
-    await sleep(getFuzzyNumber(3000, 1000));
+    await randomSleep();
 
-    await findAndClickImage(`rune-crafting/pure-essence.png`, 2);
-    await sleep(getFuzzyNumber(1500, 500));
+    // Get essence from bank
+    await findAndClickImage(`rune-crafting/${essenceType}-essence.png`, 2);
+    await sleep(getSmartFuzzyNumber(1500));
 
+    // Close bank
     await findAndClickImage(`rune-crafting/close.png`, 2, 0.94);
-    await sleep(getFuzzyNumber(1500, 500));
+    await sleep(getSmartFuzzyNumber(500));
 
+    // Teleport to Duel Arena
     await teleportToDuelArena();
-    await sleep(getFuzzyNumber(4000, 1000));
+    await waitUntilStationaryImageFound(await imageResource(`rune-crafting/axe.png`), 10000);
+    await randomSleep();
 
+    // Go to ruins
     await clickMinimap(45, 5);
-    await sleep(getFuzzyNumber(12000, 2000));
+    await sleep(getSmartFuzzyNumber(8500));
 
-    const ruinsFound = await findAndClickImage(`rune-crafting/ruins.png`, 2, 0.95, false);
-    if (!ruinsFound) {
-      await findAndClickImage(`rune-crafting/ruins2.png`, 1);
-    }
-    await sleep(getFuzzyNumber(4000, 1000));
+    // Click ruins
+    await findAndClickRuins();
+    await sleep(getSmartFuzzyNumber(2000));
 
+    await randomSleep();
+
+    // Go to alter
     await clickMinimap(70, 70);
-    await sleep(getFuzzyNumber(3000, 1000));
 
+    // Cast imbue
     await keyboard.type(Key.F2);
-    await sleep(500);
+    await sleep(getSmartFuzzyNumber(500));
+    await findAndClickImage(`rune-crafting/imbue.png`, 5, 0.94);
+    await sleep(getSmartFuzzyNumber(800));
 
-    await findAndClickImage(`rune-crafting/imbue.png`, 3, 0.94);
+    // Use earth rune on alter
     await keyboard.type(Key.F1);
-    await findAndClickImage(`rune-crafting/earth-rune.png`, 1);
-    await findAndClickImage(`rune-crafting/alter.png`, 1);
-    await sleep(getFuzzyNumber(3000, 1000));
+    await sleep(getSmartFuzzyNumber(500));
+    await clickPoint({ point: await centerOf(state.inventoryItemRegions[0]) });
+    await sleep(getSmartFuzzyNumber(600));
+    await findAndClickImage(`rune-crafting/alter.png`, 10);
+    await sleep(getSmartFuzzyNumber(2000));
 
+    // Teleport to Castle Wars
     await teleportToCastleWars();
-    await sleep(getFuzzyNumber(5000, 1000));
+    const bankIconRegion = await waitUntilStationaryImageFound(
+      await imageResource(`rune-crafting/bank-icon.png`),
+      10000,
+      0.94
+    );
 
-    await findAndClickImage(`rune-crafting/bank-icon.png`, 2, 0.94);
-    await sleep(getFuzzyNumber(5000, 1000));
+    await randomSleep();
 
-    const bankClicked = await findAndClickImage(`rune-crafting/bank.png`, 8, 0.94, false);
-    if (!bankClicked) {
-      await findAndClickImage(`rune-crafting/bank2.png`, 8, 0.94);
-    }
-    await sleep(getFuzzyNumber(3000, 1000));
+    // Go to bank
+    await clickPoint({ point: getFuzzyPoint(await centerOf(bankIconRegion!)) });
+    const bankRegion = await waitUntilStationaryImageFound(
+      await imageResource(`rune-crafting/bank.png`),
+      10000
+    );
 
+    // Open bank
+    await clickPoint({ point: getFuzzyPoint(await centerOf(bankRegion!)) });
+    await waitUntilStationaryImageFound(
+      await imageResource(`rune-crafting/${essenceType}-essence.png`),
+      10000
+    );
+
+    // Deposit lava runes
     const lavaRunePoint: Point = await centerOf(state.inventoryItemRegions[7]);
     await clickPoint({ point: lavaRunePoint });
 
     runCount++;
 
+    console.log(`run count: ${runCount}`);
+
     if (runCount % 4 === 0) {
       await getNewRing();
+    }
+
+    if (runCount % 8 === 0) {
+      await drinkEnergyPot();
     }
 
     if (
@@ -177,11 +121,12 @@ const runBot = async () => {
     ) {
       await getNewNecklace();
     }
-
-    console.log(`run count: ${runCount}`);
   }
 };
 
 export const init = async () => {
+  startingNecklaceChargeCount = await askNumber('What is your necklace charge count?');
+  essenceType = await getEssenceType();
+
   runBot();
 };

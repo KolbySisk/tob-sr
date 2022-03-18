@@ -1,6 +1,14 @@
 import _ from 'lodash';
 import { sleep } from '@nut-tree/nut-js';
-import { clickPoint, colorCheck, getFuzzyNumber, pause, pressKey, randomSleep } from '../utils';
+import {
+  askNumber,
+  clickPoint,
+  colorCheck,
+  getFuzzyNumber,
+  pause,
+  pressKey,
+  randomSleep,
+} from '../utils';
 import { Actions } from '../types';
 import { getTrainingMethod, runSetup } from './utils';
 import { TrainingMethod } from './types';
@@ -8,7 +16,7 @@ import { state } from '..';
 
 export let trainingMethod: TrainingMethod;
 
-const iterationsToRun = 2000; // TODO: move to console
+let iterationsToRun: number;
 let iterationCount = 0;
 
 const doActions = async (actions: Actions) => {
@@ -20,13 +28,13 @@ const doActions = async (actions: Actions) => {
     // Perform action - click
     if (action.actionType === 'click') {
       // Check color of click position is the expected color
-      await colorCheck(action.data.point, action.data.color);
+      //await colorCheck(action.data.point, action.data.color);
 
       // Move mouse to a fuzzy position and click
       await clickPoint({ point: action.data.point, fuzzy: true });
 
       // randomize the delay after each click - random ms between 500 - 1500
-      if (trainingMethod.waitDuration !== 0) await sleep(getFuzzyNumber(1000, 500));
+      if (trainingMethod.waitDuration !== 0) await sleep(getFuzzyNumber(400, 100));
     }
 
     // Perform action - type
@@ -48,8 +56,11 @@ const runBot = async (actions: Actions) => {
 
 export const init = async () => {
   trainingMethod = await getTrainingMethod();
+  iterationsToRun = await askNumber('How many iterations should run?');
+
   const actions = await runSetup();
   console.log(JSON.stringify(actions));
+
   runBot(actions);
 };
 

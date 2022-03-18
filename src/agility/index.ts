@@ -95,7 +95,6 @@ const attemptObstacle = async (obstacle: Obstacle, markFound: boolean) => {
   if (preImageRegion && imageRegion) {
     await clickPoint({
       point: await centerOf(imageRegion),
-      speed: 1000,
       fuzzy: true,
     });
 
@@ -122,7 +121,6 @@ const searchForMark = async () => {
   if (imageRegion) {
     await clickPoint({
       point: await centerOf(imageRegion),
-      speed: 1000,
       fuzzy: true,
     });
 

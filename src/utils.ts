@@ -5,15 +5,14 @@ import colorConvert from 'color-convert';
 import delta from 'delta-e';
 import getPixels from 'get-pixels';
 import fs from 'fs';
-import { createWorker, PSM } from 'tesseract.js';
+import { createWorker } from 'tesseract.js';
 import sharp from 'sharp';
-
+import inquirer from 'inquirer';
+import '@nut-tree/template-matcher';
 import {
-  EasingFunction,
   mouse,
   Point,
   screen,
-  straightTo,
   keyboard,
   Key,
   RGBA,
@@ -26,10 +25,7 @@ import {
 } from '@nut-tree/nut-js';
 
 import { state } from './';
-
-import { Keycode, MouseEvent } from './types';
-
-import '@nut-tree/template-matcher';
+import { Keycode, Milliseconds, MouseEvent } from './types';
 
 screen.config.resourceDirectory = 'resources';
 screen.config.autoHighlight = false;
@@ -58,19 +54,24 @@ export const initControls = () => {
 export const randomSleep = async () => {
   let sleepTime = getFuzzyNumber(100, 50);
 
-  // 20% chance of a short sleep
-  if (_.random(10) >= 9) {
+  // 5% chance of a short sleep
+  if (_.random(100) > 95) {
     console.log(blue('Short sleep triggered'));
     sleepTime = _.random(500, 3000);
   }
 
-  // 2% chance of a long sleep
-  if (_.random(100) >= 99) {
+  // 1% chance of a long sleep
+  if (_.random(100) > 99) {
     console.log(blue('Long sleep triggered'));
     sleepTime = _.random(10000, 20000);
   }
 
   await sleep(sleepTime);
+};
+
+export const getSmartFuzzyNumber = (number: number, bound = number * 0.2) => {
+  // Returns a random number between the number given, and that number + 20%. So if number = 1000 the result will be a random number between 1000 and 1200
+  return _.random(number, number + bound);
 };
 
 export const getFuzzyNumber = (number: number, bound: number) => {
@@ -84,42 +85,16 @@ export const getFuzzyPoint = (point: Point, bounds = 5): Point => {
   };
 };
 
-const easeOut: EasingFunction = (x: number): number => {
-  return 1 - Math.pow(1 - x, 5);
-};
-
-export const clickPoint = async ({
-  point,
-  speed = 2000,
-  fuzzy,
-  easingFunction = easeOut,
-}: {
-  point: Point;
-  speed?: number;
-  fuzzy?: boolean;
-  easingFunction?: EasingFunction;
-}) => {
-  mouse.config.mouseSpeed = getFuzzyNumber(speed, 500); // Pixels per second
+export const clickPoint = async ({ point, fuzzy }: { point: Point; fuzzy?: boolean }) => {
   const pointToClick = fuzzy ? getFuzzyPoint(point) : point;
-  await mouse.move(straightTo(pointToClick), easingFunction);
-  await sleep(400);
+  await mouse.setPosition(pointToClick);
+  await sleep(100);
   await mouse.leftClick();
 };
 
-export const longClickPoint = async ({
-  point,
-  speed = 2000,
-  fuzzy,
-  easingFunction = easeOut,
-}: {
-  point: Point;
-  speed?: number;
-  fuzzy?: boolean;
-  easingFunction?: EasingFunction;
-}) => {
-  mouse.config.mouseSpeed = getFuzzyNumber(speed, 500); // Pixels per second
+export const longClickPoint = async ({ point, fuzzy }: { point: Point; fuzzy?: boolean }) => {
   const pointToClick = fuzzy ? getFuzzyPoint(point) : point;
-  await mouse.move(straightTo(pointToClick), easingFunction);
+  await mouse.setPosition(pointToClick);
   await mouse.pressButton(0);
   await sleep(700);
   await mouse.releaseButton(0);
@@ -238,7 +213,6 @@ export const dropInventory = async (inventoryItemRegions: Region[]) => {
   for (const inventoryItemRegion of inventoryItemRegions) {
     await clickPoint({
       point: await centerOf(inventoryItemRegion),
-      speed: getFuzzyNumber(700, 100),
     });
 
     await sleep(getFuzzyNumber(200, 50));
@@ -386,12 +360,10 @@ export const findImageRegion = async ({
   confidence?: number;
   retryCount?: number;
 }): Promise<Region | false> => {
-  const searchOptions = new OptionalSearchParameters(regionToSearch, confidence, true);
+  const searchOptions = new OptionalSearchParameters(regionToSearch, confidence, false);
 
   return new Promise(async (resolve) => {
     const retry = async (error: string) => {
-      console.log(`retrying find image: ${retryCount}`);
-      console.log(error);
       if (retryCount === numberOfRetries) {
         resolve(false);
         return;
@@ -425,13 +397,6 @@ export const clickMinimap = async (leftPercent: number, topPercent: number) => {
   await clickPoint({ point, fuzzy: false });
 };
 
-export const moveMouseDown = async (pixelsToMove: number) => {
-  const point = await mouse.getPosition();
-  point.y += pixelsToMove;
-
-  await mouse.move(straightTo(point), easeOut);
-};
-
 export const findAndClickImage = async (
   imagePath: string,
   numberOfRetries: number,
@@ -447,7 +412,6 @@ export const findAndClickImage = async (
   if (imageRegion) {
     await clickPoint({
       point: await centerOf(imageRegion),
-      speed: 5000,
       fuzzy: true,
     });
 
@@ -456,4 +420,111 @@ export const findAndClickImage = async (
     if (throwIfNotFound) throw new Error(`${imagePath} not found`);
     else return false;
   }
+};
+
+export const askNumber = async (question: string) => {
+  const answers = await inquirer.prompt({
+    type: 'number',
+    name: 'value1',
+    message: question,
+  });
+
+  return answers.value1;
+};
+
+export const waitUntilImageFromListFound = async (
+  images: Image[],
+  maxWait: Milliseconds,
+  confidence = 0.955
+): Promise<Region> => {
+  let duration: Milliseconds = 0;
+
+  const timer = setInterval(() => {
+    duration++;
+    if (duration === maxWait) throw new Error('waitUntilImageFromListFound timed out');
+  });
+
+  const searchForImage = async (): Promise<Region> => {
+    for (const image of images) {
+      const imageRegionFound = await findImageRegion({ image, confidence, numberOfRetries: 0 });
+      if (imageRegionFound) {
+        clearInterval(timer);
+        return imageRegionFound;
+      } else {
+        const imageRegionFoundRecursively = await searchForImage();
+        if (imageRegionFoundRecursively) {
+          clearInterval(timer);
+          return imageRegionFoundRecursively;
+        }
+      }
+    }
+
+    throw new Error('waitUntilImageFromListFound error');
+  };
+
+  return await searchForImage();
+};
+
+export const waitUntilImageFound = async (
+  image: Image,
+  maxWait: Milliseconds,
+  confidence = 0.955
+): Promise<Region> => {
+  let duration: Milliseconds = 0;
+
+  const timer = setInterval(() => {
+    duration++;
+    if (duration === maxWait) throw new Error('waitUntilImageFromListFound timed out');
+  });
+
+  const searchForImage = async (): Promise<Region> => {
+    const imageRegionFound = await findImageRegion({ image, confidence, numberOfRetries: 0 });
+    if (imageRegionFound) {
+      clearInterval(timer);
+      return imageRegionFound;
+    } else {
+      const imageRegionFoundRecursively = await searchForImage();
+      if (imageRegionFoundRecursively) {
+        clearInterval(timer);
+        return imageRegionFoundRecursively;
+      }
+    }
+
+    throw new Error('waitUntilImageFromListFound error');
+  };
+
+  return await searchForImage();
+};
+
+export const waitUntilStationaryImageFound = async (
+  image: Image,
+  maxWait: Milliseconds,
+  confidence = 0.955
+): Promise<Region> => {
+  let duration: Milliseconds = 0;
+
+  const timer = setInterval(() => {
+    duration++;
+    if (duration === maxWait) throw new Error('waitUntilStationaryImageFound timed out');
+  });
+
+  const searchForStationaryImages = async (): Promise<Region> => {
+    const imageFoundRegion = await waitUntilImageFound(image, maxWait, confidence);
+    const imageFoundRegion2 = await waitUntilImageFound(image, maxWait, confidence);
+
+    if (JSON.stringify(imageFoundRegion) === JSON.stringify(imageFoundRegion2)) {
+      clearInterval(timer);
+      return imageFoundRegion;
+    } else {
+      const imageRegionFoundRecursively = await searchForStationaryImages();
+      if (imageRegionFoundRecursively) {
+        clearInterval(timer);
+        return imageRegionFoundRecursively;
+      }
+    }
+
+    throw new Error('waitUntilStationaryImageFound error');
+  };
+
+  return await searchForStationaryImages();
 };
