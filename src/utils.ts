@@ -22,6 +22,7 @@ import {
   Image,
   OptionalSearchParameters,
   imageResource,
+  randomPointIn,
 } from '@nut-tree/nut-js';
 
 import { state } from './';
@@ -212,7 +213,8 @@ export const getRegion = (): Promise<Region> => {
 export const dropInventory = async (inventoryItemRegions: Region[]) => {
   for (const inventoryItemRegion of inventoryItemRegions) {
     await clickPoint({
-      point: await centerOf(inventoryItemRegion),
+      point: await randomPointIn(inventoryItemRegion),
+      fuzzy: false,
     });
 
     await sleep(getFuzzyNumber(200, 50));
@@ -432,68 +434,39 @@ export const askNumber = async (question: string) => {
   return answers.value1;
 };
 
-export const waitUntilImageFromListFound = async (
-  images: Image[],
-  maxWait: Milliseconds,
-  confidence = 0.955
-): Promise<Region> => {
-  let duration: Milliseconds = 0;
-
-  const timer = setInterval(() => {
-    duration++;
-    if (duration === maxWait) throw new Error('waitUntilImageFromListFound timed out');
-  });
-
-  const searchForImage = async (): Promise<Region> => {
-    for (const image of images) {
-      const imageRegionFound = await findImageRegion({ image, confidence, numberOfRetries: 0 });
-      if (imageRegionFound) {
-        clearInterval(timer);
-        return imageRegionFound;
-      } else {
-        const imageRegionFoundRecursively = await searchForImage();
-        if (imageRegionFoundRecursively) {
-          clearInterval(timer);
-          return imageRegionFoundRecursively;
-        }
-      }
-    }
-
-    throw new Error('waitUntilImageFromListFound error');
-  };
-
-  return await searchForImage();
-};
-
 export const waitUntilImageFound = async (
   image: Image,
   maxWait: Milliseconds,
   confidence = 0.955
 ): Promise<Region> => {
-  let duration: Milliseconds = 0;
+  return new Promise(async (resolve, reject) => {
+    let duration: Milliseconds = 0;
 
-  const timer = setInterval(() => {
-    duration++;
-    if (duration === maxWait) throw new Error('waitUntilImageFromListFound timed out');
-  });
-
-  const searchForImage = async (): Promise<Region> => {
-    const imageRegionFound = await findImageRegion({ image, confidence, numberOfRetries: 0 });
-    if (imageRegionFound) {
-      clearInterval(timer);
-      return imageRegionFound;
-    } else {
-      const imageRegionFoundRecursively = await searchForImage();
-      if (imageRegionFoundRecursively) {
-        clearInterval(timer);
-        return imageRegionFoundRecursively;
+    const timer = setInterval(() => {
+      duration++;
+      if (duration === maxWait) {
+        reject('waitUntilImageFound timed out');
       }
-    }
+    });
 
-    throw new Error('waitUntilImageFromListFound error');
-  };
+    const searchForImage = async (): Promise<Region | void> => {
+      const imageRegionFound = await findImageRegion({ image, confidence, numberOfRetries: 0 });
+      if (imageRegionFound) {
+        clearInterval(timer);
+        resolve(imageRegionFound);
+        return imageRegionFound;
+      } else {
+        const imageRegionFoundRecursively = await searchForImage();
+        if (imageRegionFoundRecursively) {
+          clearInterval(timer);
+          resolve(imageRegionFoundRecursively);
+          return imageRegionFoundRecursively;
+        }
+      }
+    };
 
-  return await searchForImage();
+    await searchForImage();
+  });
 };
 
 export const waitUntilStationaryImageFound = async (
@@ -501,30 +474,40 @@ export const waitUntilStationaryImageFound = async (
   maxWait: Milliseconds,
   confidence = 0.955
 ): Promise<Region> => {
-  let duration: Milliseconds = 0;
+  return new Promise(async (resolve, reject) => {
+    let duration: Milliseconds = 0;
 
-  const timer = setInterval(() => {
-    duration++;
-    if (duration === maxWait) throw new Error('waitUntilStationaryImageFound timed out');
-  });
-
-  const searchForStationaryImages = async (): Promise<Region> => {
-    const imageFoundRegion = await waitUntilImageFound(image, maxWait, confidence);
-    const imageFoundRegion2 = await waitUntilImageFound(image, maxWait, confidence);
-
-    if (JSON.stringify(imageFoundRegion) === JSON.stringify(imageFoundRegion2)) {
-      clearInterval(timer);
-      return imageFoundRegion;
-    } else {
-      const imageRegionFoundRecursively = await searchForStationaryImages();
-      if (imageRegionFoundRecursively) {
-        clearInterval(timer);
-        return imageRegionFoundRecursively;
+    const timer = setInterval(() => {
+      duration++;
+      if (duration === maxWait) {
+        reject('waitUntilStationaryImageFound timed out');
       }
-    }
+    });
 
-    throw new Error('waitUntilStationaryImageFound error');
-  };
+    const searchForStationaryImages = async (): Promise<Region | void> => {
+      const imageFoundRegion = await waitUntilImageFound(image, maxWait, confidence);
+      await sleep(500);
+      const imageFoundRegion2 = await waitUntilImageFound(image, maxWait, confidence);
 
-  return await searchForStationaryImages();
+      if (
+        imageFoundRegion &&
+        imageFoundRegion2 &&
+        JSON.stringify(imageFoundRegion) === JSON.stringify(imageFoundRegion2)
+      ) {
+        clearInterval(timer);
+        resolve(imageFoundRegion);
+        return imageFoundRegion;
+      } else {
+        const imageRegionFoundRecursively = await searchForStationaryImages();
+
+        if (imageRegionFoundRecursively) {
+          clearInterval(timer);
+          resolve(imageRegionFoundRecursively);
+          return imageRegionFoundRecursively;
+        }
+      }
+    };
+
+    await searchForStationaryImages();
+  });
 };

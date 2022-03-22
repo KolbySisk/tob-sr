@@ -1,5 +1,14 @@
 import inquirer from 'inquirer';
-import { Point, centerOf, sleep, imageResource, keyboard, Key } from '@nut-tree/nut-js';
+import {
+  Point,
+  centerOf,
+  sleep,
+  imageResource,
+  randomPointIn,
+  Region,
+  keyboard,
+  Key,
+} from '@nut-tree/nut-js';
 import {
   findAndClickImage,
   findImageRegion,
@@ -44,56 +53,9 @@ export const emptyPouches = async () => {
   await findAndClickImage(`rune-crafting/empty.png`, 2);
 };
 
-export const teleportToDuelArena = async () => {
-  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
-
-  const ringRegion = await findImageRegion({
-    image: await imageResource(`rune-crafting/ring.png`),
-    numberOfRetries: 3,
-  });
-  if (!ringRegion) throw new Error('ring not found');
-
-  await longClickPoint({ point: await centerOf(ringRegion) });
-
-  const duelArenaFound = await findAndClickImage(`rune-crafting/duel-arena.png`, 1, 0.95, false);
-  if (!duelArenaFound) {
-    await findAndClickImage(`rune-crafting/duel-arena2.png`, 1, 0.95);
-  }
-};
-
-export const teleportToCastleWars = async () => {
-  await keyboard.type(Key.F3);
-
-  const ringRegion = await findImageRegion({
-    image: await imageResource(`rune-crafting/ring.png`),
-    numberOfRetries: 3,
-  });
-  if (!ringRegion) throw new Error('ring not found');
-
-  await longClickPoint({ point: await centerOf(ringRegion) });
-  await findAndClickImage(`rune-crafting/castle-wars.png`, 1);
-};
-
-export const getNewRing = async () => {
-  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
-
-  const ringRegion = await findImageRegion({
-    image: await imageResource(`rune-crafting/ring-bank.png`),
-    numberOfRetries: 1,
-  });
-  if (!ringRegion) throw new Error('ring not found');
-
-  await longClickPoint({ point: await centerOf(ringRegion) });
-  await sleep(500);
-  await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
-  await sleep(getSmartFuzzyNumber(1400));
-
-  const inventoryItem8: Point = await centerOf(state.inventoryItemRegions[7]);
-  await longClickPoint({ point: inventoryItem8 });
-  await findAndClickImage(`rune-crafting/wear.png`, 2);
-};
-
 export const getNewNecklace = async () => {
+  console.log('getting new necklace');
+
   if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
 
   const necklaceRegion = await findImageRegion({
@@ -112,15 +74,20 @@ export const getNewNecklace = async () => {
   await findAndClickImage(`rune-crafting/wear.png`, 2);
 };
 
-export const findAndClickRuins = async (retryCount = 0) => {
-  if (retryCount === 5) throw new Error('Error finding Ruins');
+export const findAndClickRuins = async (): Promise<boolean> => {
+  console.log('clicking ruins');
 
-  const ruinsRegion = await waitUntilImageFound(
-    await imageResource(`rune-crafting/ruins.png`),
-    20000
-  );
+  try {
+    const ruinsRegion = await waitUntilImageFound(
+      await imageResource(`rune-crafting/ruins.png`),
+      20000
+    );
 
-  await clickPoint({ point: getFuzzyPoint(await centerOf(ruinsRegion!)) });
+    await clickPoint({ point: getFuzzyPoint(await centerOf(ruinsRegion!)) });
+    return true;
+  } catch (error) {
+    return false;
+  }
 };
 
 export const getEssenceType = async (): Promise<'pure' | 'daeyalt'> => {
@@ -136,36 +103,106 @@ export const getEssenceType = async (): Promise<'pure' | 'daeyalt'> => {
   return response.type;
 };
 
-export const drinkEnergyPot = async () => {
-  if (!state.inventoryItemRegions) throw new Error('state.inventoryItemRegions required');
-
-  const energyRegion = await findImageRegion({
-    image: await imageResource(`rune-crafting/energy.png`),
-    numberOfRetries: 1,
-  });
-  if (!energyRegion) throw new Error('energy not found');
-
-  await longClickPoint({ point: await centerOf(energyRegion) });
-  await sleep(500);
-  await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
-  await sleep(getSmartFuzzyNumber(1000));
-
-  const inventoryItem8: Point = await centerOf(state.inventoryItemRegions[7]);
-  await longClickPoint({ point: inventoryItem8 });
-  await sleep(500);
-  await findAndClickImage(`rune-crafting/drink.png`, 1);
-  await sleep(800);
-  await clickPoint({ point: await centerOf(state.inventoryItemRegions[7]) });
-};
-
 export const clickCactusOnMiniMap = async () => {
-  const cactusRegion = await findImageRegion({
-    image: await imageResource(`rune-crafting/cactus.png`),
-    numberOfRetries: 2,
-  });
-  if (!cactusRegion) throw new Error('No cactus');
+  console.log('clicking cactus');
+
+  const cactusRegion = await waitUntilStationaryImageFound(
+    await imageResource(`rune-crafting/cactus.png`),
+    10000
+  );
+  if (!cactusRegion) throw new Error();
+
+  await sleep(1000);
+
   const x = cactusRegion.left + cactusRegion.width / 2;
   const y = cactusRegion.top;
   const point = new Point(x, y);
   await clickPoint({ point, fuzzy: false });
+};
+
+export const clickJewelryBox = async () => {
+  console.log('clicking jewelry box');
+
+  // const jewelryBoxRegion = await waitUntilImageFound(
+  //   await imageResource(`rune-crafting/jewelry-box.png`),
+  //   2000
+  // );
+
+  // await clickPoint({ point: await centerOf(jewelryBoxRegion) });
+
+  const jewelryBoxRegion = new Region(1210, 187, 46, 43);
+  await clickPoint({ point: await centerOf(jewelryBoxRegion), fuzzy: true });
+};
+
+export const openBank = async (retryCount = 0) => {
+  console.log('opening bank');
+
+  if (retryCount === 6) throw new Error('Could not open bank');
+
+  try {
+    const foundBankRegion = await waitUntilStationaryImageFound(
+      await imageResource(`rune-crafting/${retryCount % 1 === 0 ? 'bank' : 'bank2'}.png`),
+      5000
+    );
+
+    await clickPoint({ point: await centerOf(foundBankRegion), fuzzy: true });
+
+    await waitUntilImageFound(await imageResource(`rune-crafting/necklace.png`), 2000, 0.94);
+  } catch (error) {
+    await openBank(retryCount + 1);
+  }
+};
+
+export const clickPool = async () => {
+  await findAndClickImage(`rune-crafting/pool.png`, 2);
+};
+
+export const teleportToHouse = async (teleTabRegion: Region, retryCount = 0) => {
+  console.log('teleporting to house');
+
+  if (retryCount === 6) throw new Error('Could not teleport to house');
+
+  await clickPoint({ point: await randomPointIn(teleTabRegion) });
+  try {
+    await waitUntilStationaryImageFound(await imageResource(`rune-crafting/pool.png`), 10000);
+  } catch (error) {
+    await teleportToHouse(teleTabRegion, retryCount + 1);
+  }
+};
+
+export const teleportToDuelArena = async () => {
+  console.log('teleporting to duel arena');
+
+  const duelArenaOptionRegion = await waitUntilImageFound(
+    await imageResource(`rune-crafting/duel-arena.png`),
+    10000
+  );
+  await clickPoint({ point: await centerOf(duelArenaOptionRegion), fuzzy: true });
+  await waitUntilImageFound(await imageResource(`rune-crafting/axe.png`), 5000);
+};
+
+export const castImbue = async (retryCount = 0) => {
+  console.log('casting imbue');
+
+  if (retryCount === 3) throw new Error('Could not cast imbue');
+
+  await keyboard.type(Key.F2);
+  await sleep(getSmartFuzzyNumber(500));
+  const imbueFound = await findAndClickImage(`rune-crafting/imbue.png`, 5, 0.94);
+
+  if (!imbueFound) await castImbue(retryCount + 1);
+
+  await sleep(getSmartFuzzyNumber(800));
+};
+
+export const useEarthRunesOnAlter = async (earthRunesregion: Region) => {
+  console.log('clicking earth rune');
+  await keyboard.type(Key.F1);
+  await sleep(getSmartFuzzyNumber(700));
+  await clickPoint({ point: await randomPointIn(earthRunesregion) });
+  await sleep(getSmartFuzzyNumber(700));
+
+  console.log('clicking alter');
+  await findAndClickImage(`rune-crafting/alter.png`, 10);
+  await sleep(getSmartFuzzyNumber(2000));
 };

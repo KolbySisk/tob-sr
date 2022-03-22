@@ -51,24 +51,24 @@ const init = async () => {
   console.log(`Active window region saved as: ${activeWindowRegion}`);
 
   // Calculate the inventory size and position based on the window region
-  const inventoryWidth = activeWindowRegion.width * 0.2135;
-  const inventoryHeight = activeWindowRegion.height * 0.52;
+  const inventoryWidth = activeWindowRegion.width * 0.175;
+  const inventoryHeight = activeWindowRegion.height * 0.49;
   const inventoryLeft =
-    activeWindowRegion.width - inventoryWidth - activeWindowRegion.width * 0.0625;
+    activeWindowRegion.width - inventoryWidth - activeWindowRegion.width * 0.082;
   const inventoryTop =
-    activeWindowRegion.height - inventoryHeight - activeWindowRegion.height * 0.0648;
+    activeWindowRegion.height - inventoryHeight - activeWindowRegion.height * 0.075;
   const inventoryRegion = new Region(inventoryLeft, inventoryTop, inventoryWidth, inventoryHeight);
   state.inventoryRegion = inventoryRegion;
   screen.highlight(inventoryRegion);
 
   // Calculate individual inventory item regions
   const inventoryItemRegions: Region[] = [];
-  const inventoryItemWidth = inventoryWidth / 4;
-  const inventoryItemHeight = inventoryHeight / 7;
+  const inventoryItemWidth = inventoryWidth / 4 - 20;
+  const inventoryItemHeight = inventoryHeight / 7 - 15;
   for (let x = 0; x < 4; x++) {
     for (let y = 0; y < 7; y++) {
-      const left = inventoryLeft + x * inventoryItemWidth;
-      const top = inventoryTop + y * inventoryItemHeight;
+      const left = inventoryLeft + x * inventoryItemWidth + x * 26;
+      const top = inventoryTop + y * inventoryItemHeight + y * 17;
 
       const inventoryItemRegion = new Region(left, top, inventoryItemWidth, inventoryItemHeight);
       inventoryItemRegions.push(inventoryItemRegion);
@@ -140,5 +140,5 @@ const initSlack = async () => {
 (async () => {
   if (await testing()) return;
   init();
-  await initSlack();
+  // await initSlack();
 })();

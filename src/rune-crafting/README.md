@@ -1,4 +1,4 @@
 ![Start](./start.png)
 
-- Start with equipment panel selected, and bank open
-- Start with a fresh ring of dueling
+- Start with your inventory full and matching the image
+- Make sure your house matches the house image

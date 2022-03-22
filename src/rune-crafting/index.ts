@@ -1,26 +1,35 @@
-import { centerOf, imageResource, Key, keyboard, mouse, Point, sleep } from '@nut-tree/nut-js';
+import {
+  centerOf,
+  imageResource,
+  Key,
+  keyboard,
+  Point,
+  randomPointIn,
+  sleep,
+} from '@nut-tree/nut-js';
 import {
   askNumber,
   clickMinimap,
   clickPoint,
   findAndClickImage,
-  findImageRegion,
-  getFuzzyPoint,
+  getFuzzyNumber,
   getSmartFuzzyNumber,
   randomSleep,
   waitUntilImageFound,
-  waitUntilStationaryImageFound,
 } from '../utils';
 
 import {
-  teleportToDuelArena,
   findAndClickRuins,
-  teleportToCastleWars,
-  getNewRing,
   getNewNecklace,
   getEssenceType,
-  drinkEnergyPot,
   clickCactusOnMiniMap,
+  clickJewelryBox,
+  openBank,
+  clickPool,
+  teleportToHouse,
+  teleportToDuelArena,
+  castImbue,
+  useEarthRunesOnAlter,
 } from './utils';
 
 import { state } from '..';
@@ -37,17 +46,14 @@ const runBot = async () => {
   while (true) {
     await randomSleep();
 
-    // Get essence from bank
-    await findAndClickImage(`rune-crafting/${essenceType}-essence.png`, 2);
-    await sleep(getSmartFuzzyNumber(1500));
+    // Teleport to house
+    await teleportToHouse(state.inventoryItemRegions[2]);
 
-    // Close bank
-    await findAndClickImage(`rune-crafting/close.png`, 2, 0.94);
-    await sleep(getSmartFuzzyNumber(500));
+    // Click jewelry box
+    await clickJewelryBox();
 
     // Teleport to Duel Arena
     await teleportToDuelArena();
-    await waitUntilStationaryImageFound(await imageResource(`rune-crafting/axe.png`), 10000);
 
     await randomSleep();
 
@@ -55,67 +61,77 @@ const runBot = async () => {
     await clickCactusOnMiniMap();
 
     // Click ruins
-    await findAndClickRuins();
-    await sleep(getSmartFuzzyNumber(2000));
+    const ruinsFound = await findAndClickRuins();
+
+    // If ruins can't be found we bail and try again
+    if (!ruinsFound) {
+      continue;
+    }
+
+    // Wait until end of ruins teleport
+    try {
+      await waitUntilImageFound(await imageResource(`rune-crafting/tree.png`), 5000);
+    } catch (error) {
+      // If we couldn't detect teleport was successful we bail and try again
+      continue;
+    }
 
     await randomSleep();
 
     // Go to alter
-    await clickMinimap(70, 70);
+    console.log('clicking minimap');
+    await clickMinimap(getFuzzyNumber(71, 2), getFuzzyNumber(71, 2));
 
     // Cast imbue
-    await keyboard.type(Key.F2);
-    await sleep(getSmartFuzzyNumber(500));
-    await findAndClickImage(`rune-crafting/imbue.png`, 5, 0.94);
-    await sleep(getSmartFuzzyNumber(800));
+    await castImbue();
 
     // Use earth rune on alter
-    await keyboard.type(Key.F1);
-    await sleep(getSmartFuzzyNumber(500));
-    await clickPoint({ point: await centerOf(state.inventoryItemRegions[0]) });
-    await sleep(getSmartFuzzyNumber(600));
-    await findAndClickImage(`rune-crafting/alter.png`, 10);
-    await sleep(getSmartFuzzyNumber(2000));
+    await useEarthRunesOnAlter(state.inventoryItemRegions[0]);
+
+    // Teleport to house
+    await teleportToHouse(state.inventoryItemRegions[2]);
+
+    if (runCount % 12 === 0) {
+      await clickPool();
+      await sleep(3000);
+      await clickPoint({ point: new Point(1240, 640), fuzzy: true });
+      await sleep(3000);
+    }
+
+    // Click jewelry box
+    await clickJewelryBox();
 
     // Teleport to Castle Wars
-    await teleportToCastleWars();
-    const bankIconRegion = await waitUntilStationaryImageFound(
+    console.log('teleporting to castle wars');
+    const castleWarsOptionRegion = await waitUntilImageFound(
+      await imageResource(`rune-crafting/castle-wars.png`),
+      20000,
+      0.94
+    );
+    console.log('castle wars option found');
+    await clickPoint({ point: await centerOf(castleWarsOptionRegion), fuzzy: true });
+
+    await randomSleep();
+
+    // Go towards bank
+    const bankIconRegion = await waitUntilImageFound(
       await imageResource(`rune-crafting/bank-icon.png`),
       10000,
       0.94
     );
-
-    await randomSleep();
-
-    // Go to bank
-    await clickPoint({ point: getFuzzyPoint(await centerOf(bankIconRegion!)) });
-    const bankRegion = await waitUntilStationaryImageFound(
-      await imageResource(`rune-crafting/bank.png`),
-      10000
-    );
+    await clickPoint({ point: await centerOf(bankIconRegion) });
 
     // Open bank
-    await clickPoint({ point: getFuzzyPoint(await centerOf(bankRegion!)) });
-    await waitUntilStationaryImageFound(
-      await imageResource(`rune-crafting/${essenceType}-essence.png`),
-      10000
-    );
+    await openBank();
 
     // Deposit lava runes
-    await findAndClickImage(`rune-crafting/lava-rune.png`, 2);
+    console.log('depositing lava runes');
+    await clickPoint({ point: await randomPointIn(state.inventoryItemRegions[7]) });
     await sleep(400);
 
     runCount++;
 
     console.log(`run count: ${runCount}`);
-
-    if (runCount % 4 === 0) {
-      await getNewRing();
-    }
-
-    if (runCount % 8 === 0) {
-      await drinkEnergyPot();
-    }
 
     if (
       (runCount - startingNecklaceChargeCount) % 16 === 0 ||
@@ -123,6 +139,16 @@ const runBot = async () => {
     ) {
       await getNewNecklace();
     }
+
+    // Get essence from bank
+    console.log('getting more essence');
+    await findAndClickImage(`rune-crafting/${essenceType}-essence.png`, 2);
+    await sleep(getSmartFuzzyNumber(1500));
+
+    // Close bank
+    console.log('closing bank');
+    await clickPoint({ point: new Point(1291, 368), fuzzy: true });
+    await sleep(getSmartFuzzyNumber(500));
   }
 };
 
