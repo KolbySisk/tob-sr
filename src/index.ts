@@ -63,12 +63,12 @@ const init = async () => {
 
   // Calculate individual inventory item regions
   const inventoryItemRegions: Region[] = [];
-  const inventoryItemWidth = inventoryWidth / 4 - 20;
-  const inventoryItemHeight = inventoryHeight / 7 - 15;
+  const inventoryItemWidth = inventoryWidth / 4 - 26;
+  const inventoryItemHeight = inventoryHeight / 7 - 18;
   for (let x = 0; x < 4; x++) {
     for (let y = 0; y < 7; y++) {
-      const left = inventoryLeft + x * inventoryItemWidth + x * 26;
-      const top = inventoryTop + y * inventoryItemHeight + y * 17;
+      const left = inventoryLeft + x * inventoryItemWidth + x * 32 + 2;
+      const top = inventoryTop + y * inventoryItemHeight + y * 19 + 2;
 
       const inventoryItemRegion = new Region(left, top, inventoryItemWidth, inventoryItemHeight);
       inventoryItemRegions.push(inventoryItemRegion);

@@ -65,13 +65,15 @@ export const getNewNecklace = async () => {
   if (!necklaceRegion) throw new Error('necklace not found');
 
   await longClickPoint({ point: await centerOf(necklaceRegion) });
-  await sleep(500);
+  await sleep(getSmartFuzzyNumber(800));
   await findAndClickImage(`rune-crafting/withdraw-1.png`, 1);
   await sleep(getSmartFuzzyNumber(1000));
 
   const inventoryItem8: Point = await centerOf(state.inventoryItemRegions[7]);
   await longClickPoint({ point: inventoryItem8 });
+  await sleep(getSmartFuzzyNumber(800));
   await findAndClickImage(`rune-crafting/wear.png`, 2);
+  await sleep(getSmartFuzzyNumber(1000));
 };
 
 export const findAndClickRuins = async (): Promise<boolean> => {
@@ -82,7 +84,7 @@ export const findAndClickRuins = async (): Promise<boolean> => {
       await imageResource(`rune-crafting/ruins.png`),
       20000
     );
-
+    if (!ruinsRegion) throw new Error('ruinsRegion');
     await clickPoint({ point: getFuzzyPoint(await centerOf(ruinsRegion!)) });
     return true;
   } catch (error) {
@@ -144,7 +146,7 @@ export const openBank = async (retryCount = 0) => {
       await imageResource(`rune-crafting/${retryCount % 1 === 0 ? 'bank' : 'bank2'}.png`),
       5000
     );
-
+    if (!foundBankRegion) throw new Error('foundBankRegion');
     await clickPoint({ point: await centerOf(foundBankRegion), fuzzy: true });
 
     await waitUntilImageFound(await imageResource(`rune-crafting/necklace.png`), 2000, 0.94);
@@ -177,6 +179,7 @@ export const teleportToDuelArena = async () => {
     await imageResource(`rune-crafting/duel-arena.png`),
     10000
   );
+  if (!duelArenaOptionRegion) throw new Error('duelArenaOptionRegion');
   await clickPoint({ point: await centerOf(duelArenaOptionRegion), fuzzy: true });
   await waitUntilImageFound(await imageResource(`rune-crafting/axe.png`), 5000);
 };
@@ -203,6 +206,10 @@ export const useEarthRunesOnAlter = async (earthRunesregion: Region) => {
   await sleep(getSmartFuzzyNumber(700));
 
   console.log('clicking alter');
-  await findAndClickImage(`rune-crafting/alter.png`, 10);
+  const alterFound = await findAndClickImage(`rune-crafting/alter.png`, 10, 0.955, false);
+  if (!alterFound) return false;
+
   await sleep(getSmartFuzzyNumber(2000));
+
+  return true;
 };

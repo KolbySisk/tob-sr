@@ -1,14 +1,16 @@
-import { centerOf, Region, screen, sleep } from '@nut-tree/nut-js';
+import { centerOf, randomPointIn, Region, screen, sleep } from '@nut-tree/nut-js';
 import { state } from '..';
 import {
+  clickMinimap,
   clickPoint,
   getFuzzyNumber,
-  inventoryItemRegionHasItem,
+  getInventory,
+  getSmartFuzzyNumber,
   pause,
   randomSleep,
 } from '../utils';
 import { ScriptInfo } from './types';
-import { findBankBoothRegion, runSetup } from './utils';
+import { checkLogsAreBurning, findBankBoothRegion, runSetup } from './utils';
 
 let useStartPoint1 = false;
 let logsBurnedCount = 0;
@@ -20,13 +22,11 @@ const lightLog = async (inventoryItemRegions: Region[]) => {
   const logInventoryItemRegion = inventoryItemRegions[logsBurnedCount + 1];
 
   await clickPoint({
-    point: await centerOf(tinderBoxRegion),
-    fuzzy: true,
+    point: await randomPointIn(tinderBoxRegion),
   });
 
   await clickPoint({
-    point: await centerOf(logInventoryItemRegion),
-    fuzzy: true,
+    point: await randomPointIn(logInventoryItemRegion),
   });
 
   await sleep(getFuzzyNumber(4000, 50));
@@ -34,14 +34,46 @@ const lightLog = async (inventoryItemRegions: Region[]) => {
   logsBurnedCount++;
 };
 
-const checkLogsAreBurning = async (inventoryItemRegions: Region[]) => {
-  let failCount = 0;
+const bankAndGetLogs = async (
+  scriptInfo: ScriptInfo,
+  inventoryItemRegions: Region[],
+  retryCount = 0
+) => {
+  if (retryCount === 3) throw new Error('Could not bankAndGetLogs');
 
-  if (await inventoryItemRegionHasItem(inventoryItemRegions[logsBurnedCount])) failCount++;
-  if (await inventoryItemRegionHasItem(inventoryItemRegions[logsBurnedCount - 1])) failCount++;
-  if (await inventoryItemRegionHasItem(inventoryItemRegions[logsBurnedCount - 2])) failCount++;
+  console.log('Searching for bank');
+  const bankRegion = await findBankBoothRegion(scriptInfo.bankBoothImage);
+  await clickPoint({
+    point: await centerOf(bankRegion),
+    fuzzy: true,
+  });
+  await clickPoint({
+    point: await centerOf(bankRegion),
+    fuzzy: true,
+  });
+  await sleep(getSmartFuzzyNumber(800));
 
-  if (failCount >= 2) throw new Error(`Log didn't burn`);
+  const logsRegion = await screen.waitFor(scriptInfo.logsImage, 7000, 500);
+  await clickPoint({
+    point: await centerOf(logsRegion),
+    fuzzy: true,
+  });
+  await sleep(getSmartFuzzyNumber(800));
+
+  await clickPoint({
+    point: scriptInfo.closeBankPoint,
+    fuzzy: true,
+  });
+  await sleep(getSmartFuzzyNumber(800));
+
+  // check if inventory is full of logs
+  const inventoryFull =
+    (await getInventory(inventoryItemRegions)).filter((inventoryItem) => inventoryItem).length ===
+    28;
+
+  if (!inventoryFull) {
+    await bankAndGetLogs(scriptInfo, inventoryItemRegions, retryCount + 1);
+  }
 };
 
 const runBot = async (scriptInfo: ScriptInfo) => {
@@ -53,72 +85,56 @@ const runBot = async (scriptInfo: ScriptInfo) => {
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
-    await checkLogsAreBurning(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions, logsBurnedCount);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
-    await checkLogsAreBurning(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions, logsBurnedCount);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
-    await checkLogsAreBurning(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions, logsBurnedCount);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
-    await checkLogsAreBurning(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions, logsBurnedCount);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
-    await checkLogsAreBurning(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions, logsBurnedCount);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
-    await checkLogsAreBurning(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions, logsBurnedCount);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
-    await checkLogsAreBurning(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions, logsBurnedCount);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
-    await checkLogsAreBurning(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions, logsBurnedCount);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
     await lightLog(state.inventoryItemRegions);
-    await checkLogsAreBurning(state.inventoryItemRegions);
+    await checkLogsAreBurning(state.inventoryItemRegions, logsBurnedCount);
 
     useStartPoint1 = !useStartPoint1;
     logsBurnedCount = 0;
 
-    await clickPoint({
-      point: scriptInfo.eastMinimapPoint,
-      fuzzy: false,
-    });
-
+    // Go towards bank
+    await clickMinimap(99, 50);
     await sleep(7000);
 
-    console.log('Searching for bank');
-    const bankRegion = await findBankBoothRegion(scriptInfo.bankBoothImage);
-    await clickPoint({
-      point: await centerOf(bankRegion),
-      fuzzy: true,
-    });
+    // Find bank and get logs
+    await bankAndGetLogs(scriptInfo, state.inventoryItemRegions);
 
-    const logsRegion = await screen.waitFor(scriptInfo.logsImage, 7000, 500);
-    await clickPoint({
-      point: await centerOf(logsRegion),
-      fuzzy: true,
-    });
-
-    await clickPoint({
-      point: scriptInfo.closeBankPoint,
-      fuzzy: true,
-    });
-
+    // Go to a starting point
     await clickPoint({
       point: useStartPoint1 ? scriptInfo.startPoint1 : scriptInfo.startPoint2,
       fuzzy: true,
     });
+    await sleep(getSmartFuzzyNumber(800));
 
     await randomSleep();
   }

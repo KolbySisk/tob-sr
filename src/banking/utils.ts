@@ -42,12 +42,18 @@ export const runSetup = async (): Promise<Actions> => {
 export const trainingMethods: TrainingMethods = {
   'Amethyst arrowtips': {
     waitDuration: 33000,
+    sleepsCommon: true,
+    colorCheck: true,
   },
   Dhide: {
     waitDuration: 15000,
+    sleepsCommon: true,
+    colorCheck: true,
   },
   BroadBolts: {
     waitDuration: 0,
+    sleepsCommon: false,
+    colorCheck: false,
   },
 };
 

@@ -1,6 +1,12 @@
-import { Image, Region, screen, sleep } from '@nut-tree/nut-js';
+import { Image, imageResource, Point, Region, screen } from '@nut-tree/nut-js';
 import { magenta, red } from 'colorette';
-import { getPoint, getRegion, walkRight } from '../utils';
+import {
+  clickPoint,
+  getPoint,
+  getRegion,
+  inventoryItemRegionHasItem,
+  waitUntilStationaryImageFound,
+} from '../utils';
 import { ScriptInfo } from './types';
 
 export const runSetup = (): Promise<ScriptInfo> => {
@@ -28,16 +34,12 @@ export const runSetup = (): Promise<ScriptInfo> => {
     console.log(magenta('select starting spot 2'));
     const startPoint2 = await getPoint();
 
-    console.log(magenta('click east minimap'));
-    const eastMinimapPoint = await getPoint();
-
     resolve({
       bankBoothImage,
       logsImage,
       closeBankPoint,
       startPoint1,
       startPoint2,
-      eastMinimapPoint,
     });
   });
 };
@@ -46,7 +48,7 @@ export const findBankBoothRegion = async (
   bankBoothImage: Image,
   retryCount: number = 0
 ): Promise<Region> => {
-  return new Promise(async (resolve) => {
+  return new Promise(async (resolve, reject) => {
     const retry = async (error: string) => {
       console.log(`retrying find bank: ${retryCount}`);
       console.log(error);
@@ -58,12 +60,36 @@ export const findBankBoothRegion = async (
     };
 
     try {
-      await walkRight();
-      await sleep(500);
-      const bankRegion = await screen.find(bankBoothImage);
+      const boothRegion = await waitUntilStationaryImageFound(
+        await imageResource(`fire-making/booth.png`),
+        5000
+      );
+      if (!boothRegion) throw new Error('boothRegion not found');
+
+      const x = boothRegion.left + boothRegion.width - 2;
+      const y = boothRegion.top + boothRegion.height + 5;
+      await clickPoint({ point: new Point(x, y) });
+
+      const bankRegion = await waitUntilStationaryImageFound(bankBoothImage, 5000);
+      if (!bankRegion) throw new Error('bankRegion not found');
+
       resolve(bankRegion);
     } catch (error) {
       retry(`${error}`);
+      reject(error);
     }
   });
+};
+
+export const checkLogsAreBurning = async (
+  inventoryItemRegions: Region[],
+  logsBurnedCount: number
+) => {
+  let failCount = 0;
+
+  if (await inventoryItemRegionHasItem(inventoryItemRegions[logsBurnedCount])) failCount++;
+  if (await inventoryItemRegionHasItem(inventoryItemRegions[logsBurnedCount - 1])) failCount++;
+  if (await inventoryItemRegionHasItem(inventoryItemRegions[logsBurnedCount - 2])) failCount++;
+
+  if (failCount == 3) throw new Error(`Log didn't burn`);
 };

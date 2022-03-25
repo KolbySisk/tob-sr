@@ -16,6 +16,7 @@ import {
   getSmartFuzzyNumber,
   randomSleep,
   waitUntilImageFound,
+  waitUntilStationaryImageFound,
 } from '../utils';
 
 import {
@@ -69,12 +70,12 @@ const runBot = async () => {
     }
 
     // Wait until end of ruins teleport
-    try {
-      await waitUntilImageFound(await imageResource(`rune-crafting/tree.png`), 5000);
-    } catch (error) {
-      // If we couldn't detect teleport was successful we bail and try again
-      continue;
-    }
+    //await sleep(3000);
+    const treeFound = await waitUntilStationaryImageFound(
+      await imageResource(`rune-crafting/tree.png`),
+      5000
+    );
+    if (!treeFound) continue;
 
     await randomSleep();
 
@@ -86,7 +87,8 @@ const runBot = async () => {
     await castImbue();
 
     // Use earth rune on alter
-    await useEarthRunesOnAlter(state.inventoryItemRegions[0]);
+    const alterFound = await useEarthRunesOnAlter(state.inventoryItemRegions[0]);
+    if (!alterFound) continue;
 
     // Teleport to house
     await teleportToHouse(state.inventoryItemRegions[2]);
@@ -108,6 +110,8 @@ const runBot = async () => {
       20000,
       0.94
     );
+    if (!castleWarsOptionRegion) throw new Error('castleWarsOptionRegion not found');
+
     console.log('castle wars option found');
     await clickPoint({ point: await centerOf(castleWarsOptionRegion), fuzzy: true });
 
@@ -119,6 +123,7 @@ const runBot = async () => {
       10000,
       0.94
     );
+    if (!bankIconRegion) throw new Error('bankIconRegion not found');
     await clickPoint({ point: await centerOf(bankIconRegion) });
 
     // Open bank

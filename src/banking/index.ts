@@ -20,7 +20,7 @@ let iterationsToRun: number;
 let iterationCount = 0;
 
 const doActions = async (actions: Actions) => {
-  await randomSleep();
+  await randomSleep(trainingMethod.sleepsCommon);
 
   for (const action of actions) {
     if (state.paused) await pause();
@@ -28,13 +28,17 @@ const doActions = async (actions: Actions) => {
     // Perform action - click
     if (action.actionType === 'click') {
       // Check color of click position is the expected color
-      //await colorCheck(action.data.point, action.data.color);
+      if (trainingMethod.colorCheck) await colorCheck(action.data.point, action.data.color);
 
       // Move mouse to a fuzzy position and click
       await clickPoint({ point: action.data.point, fuzzy: true });
 
       // randomize the delay after each click - random ms between 500 - 1500
-      if (trainingMethod.waitDuration !== 0) await sleep(getFuzzyNumber(400, 100));
+      if (trainingMethod.waitDuration === 0) {
+        await sleep(getFuzzyNumber(100, 100));
+      } else {
+        await sleep(getFuzzyNumber(1000, 500));
+      }
     }
 
     // Perform action - type

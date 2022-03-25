@@ -6,5 +6,4 @@ export type ScriptInfo = {
   closeBankPoint: Point;
   startPoint1: Point;
   startPoint2: Point;
-  eastMinimapPoint: Point;
 };

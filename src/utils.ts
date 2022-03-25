@@ -52,17 +52,17 @@ export const initControls = () => {
   });
 };
 
-export const randomSleep = async () => {
+export const randomSleep = async (common = true) => {
   let sleepTime = getFuzzyNumber(100, 50);
 
-  // 5% chance of a short sleep
-  if (_.random(100) > 95) {
+  // 5% chance of a short sleep or 1% if common false
+  if (common ? _.random(100) > 95 : _.random(100) > 99) {
     console.log(blue('Short sleep triggered'));
     sleepTime = _.random(500, 3000);
   }
 
-  // 1% chance of a long sleep
-  if (_.random(100) > 99) {
+  // 1% chance of a long sleep or 0.05% if common false
+  if (common ? _.random(100) > 99 : _.random(1000) > 995) {
     console.log(blue('Long sleep triggered'));
     sleepTime = _.random(10000, 20000);
   }
@@ -354,39 +354,30 @@ export const findImageRegion = async ({
   numberOfRetries,
   regionToSearch = state.activeWindowRegion!,
   confidence = 0.955,
-  retryCount = 0,
 }: {
   image: Image;
   numberOfRetries: number;
   regionToSearch?: Region;
   confidence?: number;
-  retryCount?: number;
 }): Promise<Region | false> => {
   const searchOptions = new OptionalSearchParameters(regionToSearch, confidence, false);
 
   return new Promise(async (resolve) => {
-    const retry = async (error: string) => {
+    const searchForImage = async (retryCount = -1) => {
       if (retryCount === numberOfRetries) {
         resolve(false);
         return;
       }
-      resolve(
-        await findImageRegion({
-          image,
-          numberOfRetries,
-          regionToSearch,
-          confidence,
-          retryCount: retryCount + 1,
-        })
-      );
-      return;
+
+      try {
+        const imageRegion = await screen.find(image, searchOptions);
+        resolve(imageRegion);
+      } catch (error) {
+        await searchForImage(retryCount + 1);
+      }
     };
-    try {
-      const imageRegion = await screen.find(image, searchOptions);
-      resolve(imageRegion);
-    } catch (error) {
-      retry(`${error}`);
-    }
+
+    await searchForImage();
   });
 };
 
@@ -438,30 +429,26 @@ export const waitUntilImageFound = async (
   image: Image,
   maxWait: Milliseconds,
   confidence = 0.955
-): Promise<Region> => {
+): Promise<Region | false> => {
   return new Promise(async (resolve, reject) => {
     let duration: Milliseconds = 0;
 
     const timer = setInterval(() => {
       duration++;
       if (duration === maxWait) {
-        reject('waitUntilImageFound timed out');
+        resolve(false);
       }
     });
 
     const searchForImage = async (): Promise<Region | void> => {
       const imageRegionFound = await findImageRegion({ image, confidence, numberOfRetries: 0 });
+
       if (imageRegionFound) {
         clearInterval(timer);
         resolve(imageRegionFound);
         return imageRegionFound;
       } else {
-        const imageRegionFoundRecursively = await searchForImage();
-        if (imageRegionFoundRecursively) {
-          clearInterval(timer);
-          resolve(imageRegionFoundRecursively);
-          return imageRegionFoundRecursively;
-        }
+        await searchForImage();
       }
     };
 
@@ -473,14 +460,14 @@ export const waitUntilStationaryImageFound = async (
   image: Image,
   maxWait: Milliseconds,
   confidence = 0.955
-): Promise<Region> => {
-  return new Promise(async (resolve, reject) => {
+): Promise<Region | false> => {
+  return new Promise(async (resolve) => {
     let duration: Milliseconds = 0;
 
     const timer = setInterval(() => {
       duration++;
       if (duration === maxWait) {
-        reject('waitUntilStationaryImageFound timed out');
+        resolve(false);
       }
     });
 
@@ -498,13 +485,7 @@ export const waitUntilStationaryImageFound = async (
         resolve(imageFoundRegion);
         return imageFoundRegion;
       } else {
-        const imageRegionFoundRecursively = await searchForStationaryImages();
-
-        if (imageRegionFoundRecursively) {
-          clearInterval(timer);
-          resolve(imageRegionFoundRecursively);
-          return imageRegionFoundRecursively;
-        }
+        await searchForStationaryImages();
       }
     };
 
