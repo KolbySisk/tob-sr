@@ -1,6 +1,7 @@
 import { centerOf, randomPointIn, Region, screen, sleep } from '@nut-tree/nut-js';
 import { state } from '..';
 import {
+  askNumber,
   clickMinimap,
   clickPoint,
   getFuzzyNumber,
@@ -14,6 +15,7 @@ import { checkLogsAreBurning, findBankBoothRegion, runSetup } from './utils';
 
 let useStartPoint1 = false;
 let logsBurnedCount = 0;
+let logsToBurnCount: number;
 
 const lightLog = async (inventoryItemRegions: Region[]) => {
   if (state.paused) await pause();
@@ -32,6 +34,10 @@ const lightLog = async (inventoryItemRegions: Region[]) => {
   await sleep(getFuzzyNumber(4000, 50));
 
   logsBurnedCount++;
+
+  if (logsBurnedCount === logsToBurnCount) {
+    process.exit();
+  }
 };
 
 const bankAndGetLogs = async (
@@ -141,6 +147,7 @@ const runBot = async (scriptInfo: ScriptInfo) => {
 };
 
 export const init = async () => {
+  logsToBurnCount = await askNumber('How many logs you got?');
   const scriptInfo = await runSetup();
   runBot(scriptInfo);
 };

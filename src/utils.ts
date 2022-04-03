@@ -97,7 +97,7 @@ export const longClickPoint = async ({ point, fuzzy }: { point: Point; fuzzy?: b
   const pointToClick = fuzzy ? getFuzzyPoint(point) : point;
   await mouse.setPosition(pointToClick);
   await mouse.pressButton(0);
-  await sleep(700);
+  await sleep(800);
   await mouse.releaseButton(0);
 };
 
@@ -473,7 +473,7 @@ export const waitUntilStationaryImageFound = async (
 
     const searchForStationaryImages = async (): Promise<Region | void> => {
       const imageFoundRegion = await waitUntilImageFound(image, maxWait, confidence);
-      await sleep(500);
+      //await sleep(500);
       const imageFoundRegion2 = await waitUntilImageFound(image, maxWait, confidence);
 
       if (

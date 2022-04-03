@@ -55,6 +55,11 @@ export const trainingMethods: TrainingMethods = {
     sleepsCommon: false,
     colorCheck: false,
   },
+  Glass: {
+    waitDuration: 3000,
+    sleepsCommon: true,
+    colorCheck: false,
+  },
 };
 
 export const getTrainingMethod = async (): Promise<TrainingMethod> => {

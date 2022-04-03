@@ -1,12 +1,4 @@
-import {
-  centerOf,
-  imageResource,
-  Key,
-  keyboard,
-  Point,
-  randomPointIn,
-  sleep,
-} from '@nut-tree/nut-js';
+import { centerOf, imageResource, Point, randomPointIn, sleep } from '@nut-tree/nut-js';
 import {
   askNumber,
   clickMinimap,
@@ -31,6 +23,7 @@ import {
   teleportToDuelArena,
   castImbue,
   useEarthRunesOnAlter,
+  closeBank,
 } from './utils';
 
 import { state } from '..';
@@ -65,12 +58,9 @@ const runBot = async () => {
     const ruinsFound = await findAndClickRuins();
 
     // If ruins can't be found we bail and try again
-    if (!ruinsFound) {
-      continue;
-    }
+    if (!ruinsFound) continue;
 
     // Wait until end of ruins teleport
-    //await sleep(3000);
     const treeFound = await waitUntilStationaryImageFound(
       await imageResource(`rune-crafting/tree.png`),
       5000
@@ -147,13 +137,11 @@ const runBot = async () => {
 
     // Get essence from bank
     console.log('getting more essence');
-    await findAndClickImage(`rune-crafting/${essenceType}-essence.png`, 2);
+    await findAndClickImage(`rune-crafting/${essenceType}-essence.png`, 20);
     await sleep(getSmartFuzzyNumber(1500));
 
     // Close bank
-    console.log('closing bank');
-    await clickPoint({ point: new Point(1291, 368), fuzzy: true });
-    await sleep(getSmartFuzzyNumber(500));
+    await closeBank();
   }
 };
 

@@ -1,12 +1,12 @@
 'use strict';
 
-import { getActiveWindow, imageResource, Region, screen, sleep } from '@nut-tree/nut-js';
+import { getActiveWindow, Region, screen, sleep } from '@nut-tree/nut-js';
 import { createEventAdapter } from '@slack/events-api';
 import { blue, red } from 'colorette';
 import localtunnel from 'localtunnel';
 import inquirer from 'inquirer';
 import { State } from './state';
-import { initControls, waitUntilImageFound } from './utils';
+import { initControls } from './utils';
 import * as banking from './banking';
 import * as mining from './mining';
 import * as agility from './agility';

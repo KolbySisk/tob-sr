@@ -1,4 +1,4 @@
-import { Image, Point, Region } from '@nut-tree/nut-js';
+import { Image, Point } from '@nut-tree/nut-js';
 
 export type ScriptInfo = {
   bankBoothImage: Image;

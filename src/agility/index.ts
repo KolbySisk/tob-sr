@@ -1,35 +1,50 @@
 import { centerOf, imageResource, sleep } from '@nut-tree/nut-js';
-import { clickMinimap, clickPoint, findImageRegion, getFuzzyNumber, randomSleep } from '../utils';
+import {
+  clickMinimap,
+  clickPoint,
+  findImageRegion,
+  getFuzzyNumber,
+  randomSleep,
+  waitUntilImageFound,
+  waitUntilStationaryImageFound,
+} from '../utils';
 
 import '@nut-tree/template-matcher';
 
 export type Obstacle = {
   name: string;
   imageName: string;
+  successImageName: string;
   preImageName?: string;
+  markImageName?: string;
   imageAtMarkName?: string;
-  sleepTime: number;
   failFunction?: () => void;
 };
 
-let obstacleStep = 0;
+type ObstacleStep = number;
+
+let obstacleStep: ObstacleStep = 0;
+let lapCount = 0;
 
 const obstacles: Obstacle[] = [
   {
     name: 'basket',
     imageName: 'basket',
-    sleepTime: 4800,
+    successImageName: 'basket-success',
   },
   {
     name: 'stall',
     imageName: 'stall',
-    sleepTime: 6100,
+    successImageName: 'stall-success',
+    markImageName: 'mark-stall',
+    imageAtMarkName: 'stall-mark',
   },
   {
     name: 'window',
     imageName: 'window',
-    preImageName: 'prewindow',
-    sleepTime: 6600,
+    successImageName: 'window-success',
+    markImageName: 'mark-window',
+    imageAtMarkName: 'window-mark',
     failFunction: async () => {
       await clickMinimap(55, 80);
       await sleep(8000);
@@ -38,7 +53,7 @@ const obstacles: Obstacle[] = [
   {
     name: 'cactus',
     imageName: 'cactus',
-    sleepTime: 4450,
+    successImageName: 'cactus-success',
     failFunction: async () => {
       await clickMinimap(35, 85);
       await sleep(8000);
@@ -47,76 +62,67 @@ const obstacles: Obstacle[] = [
   {
     name: 'tree',
     imageName: 'tree',
-    sleepTime: 8000,
+    successImageName: 'tree-success',
   },
   {
     name: 'wall',
     imageName: 'wall',
-    sleepTime: 4200,
+    successImageName: 'wall-success',
   },
   {
     name: 'monkeybars',
     imageName: 'monkeybars',
+    successImageName: 'monkeybars-success',
+    markImageName: 'mark-monkeybars',
     imageAtMarkName: 'monkeybars-mark',
-    sleepTime: 10000,
   },
   {
     name: 'tree2',
     imageName: 'tree2',
+    successImageName: 'tree2-success',
+    markImageName: 'mark-tree2',
     imageAtMarkName: 'tree2-mark',
-    sleepTime: 6600,
   },
   {
     name: 'dryline',
     imageName: 'dryline',
-    sleepTime: 6200,
+    successImageName: 'dryline-success',
+    markImageName: 'mark-dryline',
+    imageAtMarkName: 'dryline-mark',
   },
 ];
 
-const attemptObstacle = async (obstacle: Obstacle, markFound: boolean) => {
-  console.log(`Attempting ${obstacle.name} obstacle`);
+const pickUpMark = async (obstacle: Obstacle): Promise<boolean> => {
+  if (!obstacle.markImageName) return false;
 
-  const preImageRegion = obstacle.preImageName
-    ? await findImageRegion({
-        image: await imageResource(`agility/${obstacle.preImageName}.png`),
-        numberOfRetries: 1,
-      })
-    : true;
-
-  const imageRegion = await findImageRegion({
-    image: await imageResource(
-      `agility/${
-        markFound && obstacle.imageAtMarkName ? obstacle.imageAtMarkName : obstacle.imageName
-      }.png`
-    ),
+  const foundMarkRegion = await findImageRegion({
+    image: await imageResource(`agility/${obstacle.markImageName}.png`),
     numberOfRetries: 2,
   });
+  if (!foundMarkRegion) return false;
 
-  if (preImageRegion && imageRegion) {
-    await clickPoint({
-      point: await centerOf(imageRegion),
-      fuzzy: true,
-    });
+  console.log(`Picking up ${obstacle.name} mark`);
 
-    await sleep(getFuzzyNumber(obstacle.sleepTime + 500, 500));
+  await clickPoint({ point: await centerOf(foundMarkRegion), fuzzy: true });
+  await sleep(5000);
 
-    obstacleStep++;
-  } else {
-    if (obstacle.failFunction) {
-      console.log(`Failed attempting ${obstacle.name}. Running fail function`);
-      await obstacle.failFunction();
-      obstacleStep = 0;
-    } else {
-      throw new Error(`Obstacle ${obstacle.name} failed`);
-    }
-  }
+  return true;
 };
 
-const searchForMark = async () => {
-  const imageRegion = await findImageRegion({
-    image: await imageResource(`agility/mark.png`),
-    numberOfRetries: 1,
-  });
+const attemptObstacle = async (obstacle: Obstacle, retryCount = 0): Promise<boolean> => {
+  console.log(`Attempting ${obstacle.name} obstacle`);
+
+  if (retryCount === 3) {
+    console.log(`Obstacle ${obstacle.name} failed`);
+    return false;
+  }
+
+  const markFound = await pickUpMark(obstacle);
+
+  const imageRegion = await waitUntilStationaryImageFound(
+    await imageResource(`agility/${markFound ? obstacle.imageAtMarkName : obstacle.imageName}.png`),
+    10000
+  );
 
   if (imageRegion) {
     await clickPoint({
@@ -124,28 +130,111 @@ const searchForMark = async () => {
       fuzzy: true,
     });
 
-    await sleep(5000);
+    const obstacleCompletedSuccessfully = await waitUntilStationaryImageFound(
+      await imageResource(`agility/${obstacle.successImageName}.png`),
+      10000
+    );
+
+    if (!obstacleCompletedSuccessfully) await attemptObstacle(obstacle, retryCount + 1);
 
     return true;
+  } else {
+    if (obstacle.failFunction) {
+      console.log(`Failed attempting ${obstacle.name}. Running fail function`);
+      await obstacle.failFunction();
+      return false;
+    } else {
+      return await attemptObstacle(obstacle, retryCount + 1);
+    }
+  }
+};
+
+const goHome = async () => {
+  const miniMap1Region = await waitUntilImageFound(
+    await imageResource(`agility/minimap1.png`),
+    5000
+  );
+  if (miniMap1Region) {
+    console.log('clicking minimap1 region');
+    await clickPoint({ point: await centerOf(miniMap1Region) });
+  } else {
+    console.log('clicking minimap1');
+    await clickMinimap(50, 98);
+  }
+  await waitUntilImageFound(await imageResource(`agility/minimap1-success.png`), 10000);
+
+  const miniMap2Region = await waitUntilImageFound(
+    await imageResource(`agility/minimap2.png`),
+    5000
+  );
+  if (miniMap2Region) {
+    console.log('clicking minimap2 region');
+    await clickPoint({ point: await centerOf(miniMap2Region) });
+  } else {
+    console.log('clicking minimap2');
+    await clickMinimap(28, 92);
+  }
+  const basketFound = await waitUntilImageFound(await imageResource(`agility/basket.png`), 10000);
+  if (!basketFound) {
+    // one last try
+    const miniMap2Region2 = await waitUntilImageFound(
+      await imageResource(`agility/minimap2.png`),
+      5000
+    );
+    if (miniMap2Region2) await clickPoint({ point: await centerOf(miniMap2Region2) });
+    else throw new Error('Couldnt get home');
+  }
+};
+
+const searchForObstacleStep = async (): Promise<ObstacleStep | null> => {
+  console.log('Searching for obstacle step...');
+
+  for (const [index, obstacle] of obstacles.entries()) {
+    const obstacleImageFound = await findImageRegion({
+      image: await imageResource(`agility/${obstacle.imageName}.png`),
+      numberOfRetries: 1,
+    });
+
+    if (!obstacleImageFound) continue;
+
+    // If we found a match for the first obstacle then just return 0 - there is no previous obstacle to check for success image
+    if (obstacle.name === 'basket') return 0;
+    // If not, then check for the success image - this just gives us more confidence we're on the obstacle we expect as some images can be a little generic (window)
+    else {
+      const previousObstacleSuccessImageFound = await findImageRegion({
+        image: await imageResource(`agility/${obstacles[index - 1].successImageName}.png`),
+        numberOfRetries: 1,
+      });
+
+      if (previousObstacleSuccessImageFound) return index;
+    }
   }
 
-  return false;
+  return null;
 };
 
 const runBot = async () => {
+  obstacleStep = (await searchForObstacleStep()) ?? 0;
+
   while (true) {
     while (obstacleStep !== 9) {
-      const markFound = await searchForMark();
-      await attemptObstacle(obstacles[obstacleStep], markFound);
+      const obstacleSuccessful = await attemptObstacle(obstacles[obstacleStep]);
+      if (obstacleSuccessful) obstacleStep++;
+      else {
+        const foundObstacleStep = await searchForObstacleStep();
+        if (!foundObstacleStep) {
+          throw new Error('Shits broke');
+        }
+        obstacleStep = foundObstacleStep;
+      }
     }
 
-    await clickMinimap(50, 98);
-    await sleep(7000);
-
-    await clickMinimap(25, 92);
-    await sleep(9000);
+    await goHome();
 
     obstacleStep = 0;
+
+    lapCount++;
+    console.log(`${lapCount} laps completed`);
 
     await randomSleep();
     await sleep(200);
