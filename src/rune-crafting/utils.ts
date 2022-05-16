@@ -120,7 +120,7 @@ export const clickCactusOnMiniMap = async () => {
     await imageResource(`rune-crafting/cactus.png`),
     10000
   );
-  if (!cactusRegion) throw new Error();
+  if (!cactusRegion) throw new Error('cactusRegion not found');
 
   await sleep(1000);
 
@@ -130,12 +130,24 @@ export const clickCactusOnMiniMap = async () => {
   await clickPoint({ point, fuzzy: false });
 };
 
-export const clickJewelryBox = async (retryCount = 0) => {
+export const clickJewelryBox = async (retryCount = 0): Promise<boolean> => {
   console.log('clicking jewelry box');
 
-  if (retryCount === 6) throw new Error('Could not open jewelry box');
+  if (retryCount === 6) {
+    console.log('Could not open jewelry box');
+    return false;
+  }
 
-  const jewelryBoxRegion = new Region(1210, 187, 46, 43);
+  const jewelryBoxRegion = await waitUntilStationaryImageFound(
+    await imageResource(`rune-crafting/jewelry-box.png`),
+    5000
+  );
+
+  if (!jewelryBoxRegion) {
+    console.log('jewelryBoxRegion not found');
+    return false;
+  }
+
   await clickPoint({ point: await centerOf(jewelryBoxRegion), fuzzy: true });
 
   const duelArenaOptionRegion = await waitUntilImageFound(
@@ -145,7 +157,10 @@ export const clickJewelryBox = async (retryCount = 0) => {
 
   if (!duelArenaOptionRegion) {
     await clickJewelryBox(retryCount + 1);
+    return false;
   }
+
+  return true;
 };
 
 export const openBank = async (retryCount = 0) => {
@@ -155,7 +170,7 @@ export const openBank = async (retryCount = 0) => {
 
   try {
     const foundBankRegion = await waitUntilStationaryImageFound(
-      await imageResource(`rune-crafting/${retryCount % 1 === 0 ? 'bank' : 'bank2'}.png`),
+      await imageResource(`rune-crafting/bank.png`),
       5000
     );
     if (!foundBankRegion) throw new Error('foundBankRegion');
@@ -185,16 +200,21 @@ export const teleportToHouse = async (teleTabRegion: Region, retryCount = 0) => 
   }
 };
 
-export const teleportToDuelArena = async () => {
+export const teleportToDuelArena = async (): Promise<boolean> => {
   console.log('teleporting to duel arena');
 
   const duelArenaOptionRegion = await waitUntilImageFound(
     await imageResource(`rune-crafting/duel-arena.png`),
     5000
   );
-  if (!duelArenaOptionRegion) throw new Error('duelArenaOptionRegion');
+  if (!duelArenaOptionRegion) {
+    console.log('duelArenaOptionRegion not found');
+    return false;
+  }
   await clickPoint({ point: await centerOf(duelArenaOptionRegion), fuzzy: true });
   await waitUntilImageFound(await imageResource(`rune-crafting/axe.png`), 5000);
+
+  return true;
 };
 
 export const castImbue = async (retryCount = 0) => {
@@ -222,7 +242,7 @@ export const useEarthRunesOnAlter = async (earthRunesregion: Region) => {
   const alterFound = await findAndClickImage(`rune-crafting/alter.png`, 10, 0.955, false);
   if (!alterFound) return false;
 
-  await sleep(getSmartFuzzyNumber(2000));
+  await sleep(getSmartFuzzyNumber(4000));
 
   return true;
 };
@@ -235,7 +255,7 @@ export const closeBank = async (retryCount = 0) => {
   await clickPoint({ point: new Point(1291, 368), fuzzy: true });
 
   try {
-    await waitUntilStationaryImageFound(await imageResource(`rune-crafting/swords.png`), 5000);
+    await waitUntilStationaryImageFound(await imageResource(`rune-crafting/bank.png`), 5000);
   } catch (error) {
     await closeBank(retryCount + 1);
   }

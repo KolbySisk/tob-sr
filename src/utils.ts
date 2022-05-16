@@ -394,11 +394,13 @@ export const findAndClickImage = async (
   imagePath: string,
   numberOfRetries: number,
   confidence: number = 0.95,
-  throwIfNotFound: boolean = true
+  throwIfNotFound: boolean = true,
+  regionToSearch?: Region
 ) => {
   const imageRegion = await findImageRegion({
     image: await imageResource(imagePath),
     numberOfRetries,
+    regionToSearch,
     confidence,
   });
 

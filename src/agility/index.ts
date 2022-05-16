@@ -3,7 +3,6 @@ import {
   clickMinimap,
   clickPoint,
   findImageRegion,
-  getFuzzyNumber,
   randomSleep,
   waitUntilImageFound,
   waitUntilStationaryImageFound,
@@ -149,41 +148,61 @@ const attemptObstacle = async (obstacle: Obstacle, retryCount = 0): Promise<bool
   }
 };
 
-const goHome = async () => {
-  const miniMap1Region = await waitUntilImageFound(
-    await imageResource(`agility/minimap1.png`),
-    5000
-  );
-  if (miniMap1Region) {
-    console.log('clicking minimap1 region');
-    await clickPoint({ point: await centerOf(miniMap1Region) });
-  } else {
-    console.log('clicking minimap1');
-    await clickMinimap(50, 98);
-  }
-  await waitUntilImageFound(await imageResource(`agility/minimap1-success.png`), 10000);
+const goHome = async (): Promise<boolean> => {
+  const goToSpot1 = async (): Promise<boolean> => {
+    const spot1Region = await waitUntilImageFound(
+      await imageResource(`agility/minimap1.png`),
+      5000
+    );
+    if (spot1Region) {
+      console.log('clicking minimap1 region');
+      await clickPoint({ point: await centerOf(spot1Region) });
+    } else {
+      console.log('clicking minimap1');
+      await clickMinimap(50, 98);
+    }
+    const spot1RegionSuccess = await waitUntilImageFound(
+      await imageResource(`agility/minimap1-success.png`),
+      5000
+    );
+    return spot1RegionSuccess ? true : false;
+  };
 
-  const miniMap2Region = await waitUntilImageFound(
-    await imageResource(`agility/minimap2.png`),
-    5000
-  );
-  if (miniMap2Region) {
-    console.log('clicking minimap2 region');
-    await clickPoint({ point: await centerOf(miniMap2Region) });
-  } else {
-    console.log('clicking minimap2');
-    await clickMinimap(28, 92);
-  }
-  const basketFound = await waitUntilImageFound(await imageResource(`agility/basket.png`), 10000);
-  if (!basketFound) {
-    // one last try
-    const miniMap2Region2 = await waitUntilImageFound(
+  const goToSpot2 = async (): Promise<boolean> => {
+    const spot2Region = await waitUntilImageFound(
       await imageResource(`agility/minimap2.png`),
       5000
     );
-    if (miniMap2Region2) await clickPoint({ point: await centerOf(miniMap2Region2) });
-    else throw new Error('Couldnt get home');
-  }
+    if (spot2Region) {
+      console.log('clicking minimap2 region');
+      await clickPoint({ point: await centerOf(spot2Region) });
+    } else {
+      console.log('clicking minimap2');
+      await clickMinimap(28, 92);
+    }
+    const spot2RegionSuccess = await waitUntilImageFound(
+      await imageResource(`agility/basket.png`),
+      5000
+    );
+    if (spot2RegionSuccess) return true;
+    else {
+      // one last try
+      const spot2Region2 = await waitUntilImageFound(
+        await imageResource(`agility/minimap2.png`),
+        5000
+      );
+      if (spot2Region2) {
+        await clickPoint({ point: await centerOf(spot2Region2) });
+        return true;
+      } else {
+        console.log('Couldnt get home');
+        return false;
+      }
+    }
+  };
+
+  await goToSpot1();
+  return await goToSpot2();
 };
 
 const searchForObstacleStep = async (): Promise<ObstacleStep | null> => {
@@ -229,12 +248,19 @@ const runBot = async () => {
       }
     }
 
-    await goHome();
+    const goHomeSuccessful = await goHome();
+    if (goHomeSuccessful) {
+      obstacleStep = 0;
 
-    obstacleStep = 0;
-
-    lapCount++;
-    console.log(`${lapCount} laps completed`);
+      lapCount++;
+      console.log(`${lapCount} laps completed`);
+    } else {
+      const foundObstacleStep = await searchForObstacleStep();
+      if (!foundObstacleStep) {
+        throw new Error('Shits broke');
+      }
+      obstacleStep = foundObstacleStep;
+    }
 
     await randomSleep();
     await sleep(200);

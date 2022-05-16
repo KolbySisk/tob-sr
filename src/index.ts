@@ -12,6 +12,7 @@ import * as mining from './mining';
 import * as agility from './agility';
 import * as fireMaking from './fire-making';
 import * as runeCrafting from './rune-crafting';
+import * as thieving from './thieving';
 
 import 'dotenv/config';
 
@@ -23,12 +24,14 @@ const scripts: {
   Agility: typeof agility;
   FireMaking: typeof fireMaking;
   RuneCrafting: typeof runeCrafting;
+  Thieving: typeof thieving;
 } = {
   Banking: banking,
   Mining: mining,
   Agility: agility,
   FireMaking: fireMaking,
   RuneCrafting: runeCrafting,
+  Thieving: thieving,
 };
 
 const testing = async () => {

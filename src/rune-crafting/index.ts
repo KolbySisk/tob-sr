@@ -44,7 +44,8 @@ const runBot = async () => {
     await teleportToHouse(state.inventoryItemRegions[2]);
 
     // Click jewelry box
-    await clickJewelryBox();
+    const jewelryBoxClicked = await clickJewelryBox();
+    if (!jewelryBoxClicked) process.exit(1);
 
     // Teleport to Duel Arena
     await teleportToDuelArena();
@@ -61,33 +62,26 @@ const runBot = async () => {
     if (!ruinsFound) continue;
 
     // Wait until end of ruins teleport
-    const treeFound = await waitUntilStationaryImageFound(
-      await imageResource(`rune-crafting/tree.png`),
+    const alterFound = await waitUntilStationaryImageFound(
+      await imageResource(`rune-crafting/alter.png`),
       5000
     );
-    if (!treeFound) continue;
+    if (!alterFound) continue;
 
     await randomSleep();
-
-    // Go to alter
-    console.log('clicking minimap');
-    await clickMinimap(getFuzzyNumber(71, 2), getFuzzyNumber(71, 2));
 
     // Cast imbue
     await castImbue();
 
-    // Use earth rune on alter
-    const alterFound = await useEarthRunesOnAlter(state.inventoryItemRegions[0]);
-    if (!alterFound) continue;
+    const craftSuccessful = await useEarthRunesOnAlter(state.inventoryItemRegions[0]);
+    if (!craftSuccessful) continue;
 
     // Teleport to house
     await teleportToHouse(state.inventoryItemRegions[2]);
 
     if (runCount % 12 === 0) {
       await clickPool();
-      await sleep(3000);
-      await clickPoint({ point: new Point(1240, 640), fuzzy: true });
-      await sleep(3000);
+      await sleep(getSmartFuzzyNumber(2000));
     }
 
     // Click jewelry box
